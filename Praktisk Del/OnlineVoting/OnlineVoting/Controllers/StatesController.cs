@@ -82,6 +82,88 @@ namespace OnlineVoting.Controllers
         }
 
 
+        public ActionResult Details(int? id)// hämtar alla state info
+        {
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+
+            var state = db.States.Find(id);
+
+            if (state == null)
+            {
+
+                return HttpNotFound();
+            }
+
+            return View(state);
+        }
+
+        [HttpGet]
+
+        public ActionResult Delete(int? id)// visar bekräftelse view för att ta bort 
+        {
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+
+            var state = db.States.Find(id);
+
+            if (state == null)
+            {
+
+                return HttpNotFound();
+            }
+
+            return View(state);
+        }
+
+        [HttpPost]
+
+        public ActionResult Delete(int id, State state)// posta och tar bort state 
+        {
+
+
+            state = db.States.Find(id);
+
+            if (state == null)
+            {
+
+                return HttpNotFound();
+            }
+
+            db.States.Remove(state);
+            try
+            {
+                db.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                if (ex.InnerException != null &&
+                    ex.InnerException.InnerException != null &&
+                    ex.InnerException.InnerException.Message.Contains("REFERENCE"))
+                {
+                    ViewBag.Error = "Can't delete the register because it has related records to it";
+
+                }
+                else
+                {
+                    ViewBag.Error = ex.Message;
+                }
+
+                return View(state);
+
+            }
+
+            return RedirectToAction("Index");
+
+
+        }
+
+
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
