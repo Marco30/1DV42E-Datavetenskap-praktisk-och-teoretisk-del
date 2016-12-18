@@ -32,7 +32,7 @@ namespace OnlineVoting.Controllers
         }
 
 
-        private List<User> GenerateUserList()// används till att lad hem alla användare så att man kan skapa en XML fil
+        private List<User> GenerateUserList()// anbänds till att lad hem alla användare så att man kan skapa en XML fil
         {
 
 
