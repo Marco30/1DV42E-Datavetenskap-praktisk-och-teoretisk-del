@@ -1,0 +1,53 @@
+﻿@model IEnumerable<OnlineVoting.Models.Rank>
+
+@{
+    ViewBag.Title = "ShowResults";
+}
+
+<h2>ShowResults</h2>
+
+<p>
+    @Html.ActionLink("Back To All Results", "Index", "Votings")
+</p>
+
+<p>
+    @Html.DisplayNameFor(model => model.Electionname) : @ViewBag.NameOfElection
+</p>
+<p>
+    @Html.DisplayNameFor(model => model.State) : @ViewBag.StateOfElection
+</p>
+<p>
+    The Winner Is : @ViewBag.WinnerOfElection
+<p>
+</p>
+    Number of votes : @ViewBag.NumberOfVotes
+    </p>
+
+    <table class="table">
+        <tr>
+
+
+            <th>
+                @Html.DisplayNameFor(model => model.Candidate)
+            </th>
+
+            <th>
+                @Html.DisplayNameFor(model => model.QuantityVotes)
+            </th>
+            <th></th>
+        </tr>
+
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Candidate)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.QuantityVotes)
+                </td>
+
+            </tr>
+        }
+
+    </table>

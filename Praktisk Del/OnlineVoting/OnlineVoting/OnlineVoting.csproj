@@ -209,6 +209,7 @@
     <Compile Include="Models\OnlineVotingContext.cs" />
     <Compile Include="Models\DetailsVotingView.cs" />
     <Compile Include="Models\IdentityModels.cs" />
+    <Compile Include="Models\Rank.cs" />
     <Compile Include="Models\RegisterUserView.cs" />
     <Compile Include="Models\State.cs" />
     <Compile Include="Models\User.cs" />
@@ -285,11 +286,16 @@
     <Content Include="Views\Users\Details.cshtml" />
     <Content Include="Views\Users\Delete.cshtml" />
     <Content Include="Views\Users\Create.cshtml" />
+    <Content Include="Views\Votings\ShowResults.cshtml" />
+    <Content Include="Views\Votings\Results.cshtml" />
+    <Content Include="Views\Votings\MyVotings.cshtml" />
+    <Content Include="Views\Votings\AddCandidate.cshtml" />
     <Content Include="Views\Votings\Index.cshtml" />
     <Content Include="Views\Votings\Details.cshtml" />
     <Content Include="Views\Votings\Create.cshtml" />
     <Content Include="Views\Votings\Edit.cshtml" />
     <Content Include="Views\Votings\Delete.cshtml" />
+    <Content Include="Views\Votings\Vote.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

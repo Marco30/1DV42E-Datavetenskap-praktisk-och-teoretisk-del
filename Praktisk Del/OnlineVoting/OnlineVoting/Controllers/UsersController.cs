@@ -28,13 +28,88 @@ namespace OnlineVoting.Controllers
         [Authorize(Roles = "Admin")]
         public ActionResult XML()// skapar XML fil 
         {
+            var report = GenerateUserList();
 
+            var doc = new XDocument();
+            var xmlSerializer = new XmlSerializer(report.GetType());
+            using (var writer = doc.CreateWriter())
+            {
+                xmlSerializer.Serialize(writer, report);
+            }
+
+            XElement el = doc.Root;
+
+            var fil = "/UserList.xml";
+
+            el.Save(Server.MapPath("~/Content/XML") + fil);// bör läga till bekreftelse att fil skapatas och filen borde visas i ny flick på webbläsaren 
+
+            return RedirectToAction("Index", "Users");
         }
 
 
         private List<User> GenerateUserList()// anbänds till att lad hem alla användare så att man kan skapa en XML fil
         {
+            var connectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
+     
+            var sql = "SELECT * FROM Users ORDER BY LastName, FirstName";
 
+
+            // Skapar och initierar ett anslutningsobjekt.
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                try
+                {
+                    // Skapar ett List-objekt med 100 platser.
+                    var User = new List<User>(100);
+
+                    // Skapar och initierar ett SqlCommand-objekt som används till att exekveras specifierad lagrad procedur.
+                    var command = new SqlCommand(sql, connection);
+
+
+                    // Öppnar anslutningen till databasen.
+                    connection.Open();
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        // Tar reda på vilket index de olika kolumnerna har.
+                        var UserID = reader.GetOrdinal("UserId");
+                        var UserName = reader.GetOrdinal("UserName");
+                        var FirstName = reader.GetOrdinal("FirstName");
+                        var LastName = reader.GetOrdinal("LastName");
+                        var Phone = reader.GetOrdinal("Phone");
+                        var Adress = reader.GetOrdinal("Adress");
+                        var Photo = reader.GetOrdinal("Photo");
+
+                        // Så länge som det finns poster att läsa returnerar Read true och läsningen fortsätter.
+                        while (reader.Read())
+                        {
+                            // Hämtar ut datat för en post.
+                            User.Add(new User
+                            {
+                            
+                           UserId = reader.GetInt32(UserID),
+                            UserName = reader.GetString(UserName),
+                            FirstName = reader.GetString(FirstName),
+                            LastName = reader.GetString(LastName),
+                             Phone = reader.GetString(Phone),
+                            Adress = reader.GetString(Adress),
+                           Photo = reader.GetString(Photo)
+
+                        });
+                        }
+                    }
+
+                    // Avallokerar minne som inte används och skickar tillbaks listan med aktiviteter.
+                    User.TrimExcess();
+
+                    return User;
+                }
+                catch
+                {
+                    throw new ApplicationException("An error occured while getting members from the database.");
+                }
+
+            }
 
         }
 
