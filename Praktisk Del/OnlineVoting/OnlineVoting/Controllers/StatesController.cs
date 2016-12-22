@@ -18,6 +18,11 @@ namespace OnlineVoting.Controllers
         [HttpGet]
         public ActionResult Index()//visar alla states
         {
+
+            if (TempData["Message"] != null)
+            {
+                ViewBag.Message = TempData["Message"].ToString();// visar medelande som tagit med fron Edit eller delit view
+            }
             return View(db.States.ToList());
         }
 
@@ -61,24 +66,46 @@ namespace OnlineVoting.Controllers
                 return HttpNotFound();
             }
 
-            return View(state);
+            if ("Open" == state.Descripcion | "Closed" == state.Descripcion)// används för att kontrollera att inte Open eller closed state ändras, utan dem så slutar visa funktioner att fungera
+            {
+
+                TempData["Message"] = "You tried to Edit (" + state.Descripcion + "), This State can not be edited because it is vital for OnlineVotingSystem!";
+                return RedirectToAction("Index", "States");
+
+            }
+            else
+            {
+                return View(state);
+            }
         }
 
         [HttpPost]
-
+        [ValidateAntiForgeryToken]
         public ActionResult Edit(State state)// postar ändringar man gjort på state
         {
-            if (!ModelState.IsValid)
+
+            //var S1 = db.States.Find(state.StateId);
+            // används för att inte Entity Framework inte ska binda sig till state modelen så att den längre ner kan updateras utan problem
+            var S1 = db.States.AsNoTracking().Where(p => p.StateId == state.StateId).FirstOrDefault();
+            
+            if ("Open" == S1.Descripcion | "Closed" == S1.Descripcion)// används här i den här post funktionen för att hindra post attacker som kan göras genom URL, man postar ändrignar som int ska gå att göras, 
+            {
+                TempData["Message"] = "You tried to use the URL to Post Edit (" + S1.Descripcion + "), This State can not be edited because it is vital for OnlineVotingSystem!";
+                return RedirectToAction("Index", "States");
+            }
+            else if (!ModelState.IsValid)
             {
 
                 return View(state);
 
             }
-
-
-            db.Entry(state).State = EntityState.Modified;
-            db.SaveChanges();
-            return RedirectToAction("Index");
+            else
+            {
+                
+                db.Entry(state).State = EntityState.Modified;
+                db.SaveChanges();
+                return RedirectToAction("Index");
+            }
         }
 
 
@@ -97,7 +124,9 @@ namespace OnlineVoting.Controllers
                 return HttpNotFound();
             }
 
-            return View(state);
+
+                return View(state);
+
         }
 
         [HttpGet]
@@ -117,16 +146,25 @@ namespace OnlineVoting.Controllers
                 return HttpNotFound();
             }
 
-            return View(state);
+            if ("Open" == state.Descripcion | "Closed" == state.Descripcion)//används för att kontrollera att inte Open eller closed state tas bort, utan dem så slutar visa funktioner att fungera 
+            {
+                TempData["Message"] = "You tried to Delit (" + state.Descripcion + "), This State can not be Delitet because it is vital for OnlineVotingSystem!";
+                return RedirectToAction("Index", "States");
+
+            }
+            else
+            {
+                return View(state);
+            }
         }
 
         [HttpPost]
-
-        public ActionResult Delete(int id, State state)// posta och tar bort state 
+        //[ValidateAntiForgeryToken]
+        public ActionResult Delete(int id)// posta och tar bort state 
         {
 
 
-            state = db.States.Find(id);
+            var state = db.States.Find(id);
 
             if (state == null)
             {
@@ -134,30 +172,44 @@ namespace OnlineVoting.Controllers
                 return HttpNotFound();
             }
 
-            db.States.Remove(state);
-            try
-            {
-                db.SaveChanges();
-            }
-            catch (Exception ex)
-            {
-                if (ex.InnerException != null &&
-                    ex.InnerException.InnerException != null &&
-                    ex.InnerException.InnerException.Message.Contains("REFERENCE"))
-                {
-                    ViewBag.Error = "Can't delete the register because it has related records to it";
 
-                }
-                else
+            if ("Open" == state.Descripcion | "Closed" == state.Descripcion)//används för att kontrollera att inte Open eller closed state tas bort, utan dem så slutar visa funktioner att fungera 
+            {
+                TempData["Message"] = "You tried to use the URL to Post Delit (" + state.Descripcion + "), This State can not be Delitet because it is vital for OnlineVotingSystem!";
+                return RedirectToAction("Index", "States");
+
+            }
+            else
+            {
+                db.States.Remove(state);
+
+                try
                 {
-                    ViewBag.Error = ex.Message;
+                    db.SaveChanges();
                 }
+                catch (Exception ex)
+                {
+                    if (ex.InnerException != null &&
+                        ex.InnerException.InnerException != null &&
+                        ex.InnerException.InnerException.Message.Contains("REFERENCE"))
+                    {
+                        ViewBag.Error = "Can't delete the register because it has related records to it";
+
+                    }
+                    else
+                    {
+                        ViewBag.Error = ex.Message;
+                    }
 
                 return View(state);
 
             }
 
-            return RedirectToAction("Index");
+                return RedirectToAction("Index");
+          }
+
+        
+
 
 
         }

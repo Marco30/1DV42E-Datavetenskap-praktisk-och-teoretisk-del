@@ -258,7 +258,7 @@ namespace OnlineVoting.Controllers
 
 
         [Authorize(Roles = "User")]
-        public ActionResult MyVotings()// visar valen 
+        public ActionResult MyVotings()// visar valen som är pågång 
         {
             // söker login
             var user = db.Users
@@ -442,6 +442,12 @@ namespace OnlineVoting.Controllers
 
                 });
             }
+
+            if (TempData["Message"] != null)
+            {
+                ViewBag.Message = TempData["Message"].ToString();// visar medelande som tagit med fron Edit view
+            }
+
             return View(views);
         }
 
@@ -554,23 +560,34 @@ namespace OnlineVoting.Controllers
                 return HttpNotFound();
             }
 
-            //DateTime
-            var view = new VotingView
-            {
-                DateEnd = voting.DateTimeEnd,
-                DateStart = voting.DateTimeStart,
-                Description = voting.Description,
-                IsEnabledBlankVote = voting.IsEnableBlankVote,
-                IsForAllUsers = voting.IsForAllUsers,
-                Remarks = voting.Remarks,
-                StateId = voting.StateId,
-                TimeEnd = voting.DateTimeEnd,
-                TimeStart = voting.DateTimeStart,
-                VotingId = voting.VotingId,
-            };
+            var state = db.States.Find(voting.StateId);
 
-            ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion", voting.StateId);
-            return View(view);
+            if ("Open" == state.Descripcion)// används för att kontrollera om ett val är på gong eller avslutad, är ett val avslutat så ska man inte kunna ändra något i valt, detta är en funktion som lags till för att bevara valets integritet
+            {
+                //DateTime
+                var view = new VotingView
+                {
+                    DateEnd = voting.DateTimeEnd,
+                    DateStart = voting.DateTimeStart,
+                    Description = voting.Description,
+                    IsEnabledBlankVote = voting.IsEnableBlankVote,
+                    IsForAllUsers = voting.IsForAllUsers,
+                    Remarks = voting.Remarks,
+                    StateId = voting.StateId,
+                    TimeEnd = voting.DateTimeEnd,
+                    TimeStart = voting.DateTimeStart,
+                    VotingId = voting.VotingId,
+                };
+
+                ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion", voting.StateId);
+
+                return View(view);
+            }
+            else
+            {
+                TempData["Message"] = "You tried to Edit (" + voting.Description + "), This election is finished and can not be edited anymore!";
+                return RedirectToAction("Index", "votings");
+            }
 
 
         }
@@ -579,31 +596,50 @@ namespace OnlineVoting.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Edit(VotingView view)// postar ändringarna man gjort i valets info
         {
-            if (ModelState.IsValid)
-            {
-                //DateTime
-                var voting = new Voting
-                {
-                    DateTimeEnd = view.DateEnd
-                                  .AddHours(view.TimeEnd.Hour)
-                                  .AddMinutes(view.TimeEnd.Minute),
-                    DateTimeStart = view.DateStart
-                                  .AddHours(view.TimeStart.Hour)
-                                  .AddMinutes(view.TimeStart.Minute),
-                    Description = view.Description,
-                    IsEnableBlankVote = view.IsEnabledBlankVote,
-                    IsForAllUsers = view.IsForAllUsers,
-                    Remarks = view.Remarks,
-                    StateId = view.StateId,
-                    VotingId = view.VotingId,
-                };
 
-                db.Entry(voting).State = EntityState.Modified;
-                db.SaveChanges();
-                return RedirectToAction("Index");
+            //Voting voting1 = db.Votings.Find(view.VotingId);
+            // används för att inte Entity Framework inte ska binda sig till state modelen så att den längre ner kan updateras utan problem
+            var V1 = db.Votings.AsNoTracking().Where(p => p.VotingId == view.VotingId).FirstOrDefault();
+
+            var state = db.States.Find(V1.StateId);
+
+            // används här i den här post funktionen för att hindra post attacker som kan göras genom URL, man postar ändrignar som int ska gå att göras
+            if ("Open" == state.Descripcion)// används för att kontrollera om ett val är på gong eller avslutad, är ett val avslutat så ska man inte kunna ändra något i valt, detta är en funktion som lags till för att bevara valets integritet
+            {
+                if (ModelState.IsValid)
+                {
+                    //DateTime
+                    var voting = new Voting
+                    {
+                        DateTimeEnd = view.DateEnd
+                                      .AddHours(view.TimeEnd.Hour)
+                                      .AddMinutes(view.TimeEnd.Minute),
+                        DateTimeStart = view.DateStart
+                                      .AddHours(view.TimeStart.Hour)
+                                      .AddMinutes(view.TimeStart.Minute),
+                        Description = view.Description,
+                        IsEnableBlankVote = view.IsEnabledBlankVote,
+                        IsForAllUsers = view.IsForAllUsers,
+                        Remarks = view.Remarks,
+                        StateId = view.StateId,
+                        VotingId = view.VotingId,
+                    };
+
+                    db.Entry(voting).State = EntityState.Modified;
+                    db.SaveChanges();
+                    return RedirectToAction("Index");
+                }
+
+                ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion", view.StateId);
+                return View(view);
+
             }
-            ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion", view.StateId);
-            return View(view);
+            else
+            {
+                TempData["Message"] = "You tried to use the URL to post Edit (" + V1.Description + "), This election is finished and can not be edited anymore!";
+                return RedirectToAction("Index", "votings");
+            }
+
         }
 
 

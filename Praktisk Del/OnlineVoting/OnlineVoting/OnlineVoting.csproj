@@ -301,7 +301,6 @@
     <Folder Include="App_Data\" />
     <Folder Include="Content\Photos\" />
     <Folder Include="Content\XML\" />
-    <Folder Include="Models\DataModels\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="fonts\glyphicons-halflings-regular.woff" />
