@@ -145,6 +145,7 @@ namespace OnlineVoting.Controllers
                     IsEnableBlankVote = voting.IsEnableBlankVote,
                     IsForAllUsers = voting.IsForAllUsers,
                     QuantityBlankVotes = voting.QuantityBlankVotes,
+                    QuantityVotes = voting.QuantityVotes,
                     Remarks = voting.Remarks,
                     StateId = voting.StateId,
                     State = voting.State,
@@ -160,7 +161,7 @@ namespace OnlineVoting.Controllers
 
 
         [Authorize(Roles = "User")]
-        public ActionResult VoteForCandidate(int candidateId, int votingId)// validerign av användare för få möjlighet att rösta 
+        public ActionResult VoteForCandidate(int candidateId, int votingId)// röstnings funktion, används för att rösta 
         {
             // validering av anvädnare 
             var user = db.Users
@@ -186,7 +187,7 @@ namespace OnlineVoting.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            //validering om man inte röstat så kommer man hitt 
+            //kör röstnings funktionen 
             if (this.VoteCandidate(user, candidate, voting))
             {
                 return RedirectToAction("MyVotings");
@@ -234,7 +235,87 @@ namespace OnlineVoting.Controllers
             return false;
         }
 
+        //---------------------------------------------------- testar blankröst  
 
+        [Authorize(Roles = "User")]
+        public ActionResult VoteForBlankCandidate(int candidateId, int votingId)// röstnings funktion, validerign av användare för få möjlighet att rösta blankt 
+        {
+            
+            // validering av anvädnare 
+            var user = db.Users
+                .Where(u => u.UserName == this.User.Identity.Name)
+                .FirstOrDefault();
+            
+            if (user == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var candidate = db.Candidates.Find(candidateId);
+
+            if (candidate == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var voting = db.Votings.Find(votingId);
+
+            if (voting == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            //validering om man inte röstat så kommer man hitt 
+            if (this.VoteBlank(user, candidate, voting))
+            {
+                return RedirectToAction("MyVotings");
+            }
+
+            return RedirectToAction("Index", "Home");
+        }
+
+        private bool VoteBlank(Models.User user, Candidate candidate, Voting voting) // röstnings funktion för att rösta blankt 
+        {
+
+            using (var transaction = db.Database.BeginTransaction())// kontakt med DB och transaction anbvänds i MVC för att kunna läga till data i flera tabeler 
+            {
+                var votingDetail = new VotingDetail
+                {
+                    CandidateId = candidate.CandidateId,
+                    DateTime = DateTime.Now,
+                    UserId = user.UserId,
+                    VotingID = voting.VotingId,
+                };
+
+                db.VotingDetails.Add(votingDetail);
+
+
+               /* candidate.QuantityVotes++;// läger till en röst 
+
+                db.Entry(candidate).State = EntityState.Modified;// läger till röst i DB*/
+
+                voting.QuantityVotes++;
+
+                voting.QuantityBlankVotes++;
+
+                db.Entry(voting).State = EntityState.Modified;
+
+                //sparar data i DB
+                try
+                {
+                    db.SaveChanges();
+                    transaction.Commit();
+                    return true;
+                }
+                catch (Exception)// om någto går fel så går DB till baks till inna något ändrats 
+                {
+                    transaction.Rollback();
+                }
+            }
+            return false;
+        }
+
+        //----------------------------------------------------  
 
         [Authorize(Roles = "User")]
         public ActionResult Vote(int votingId)// visar röstnigns Viewn
@@ -252,6 +333,12 @@ namespace OnlineVoting.Controllers
                 Remarks = voting.Remarks,
                 VotingId = voting.VotingId,
             };
+
+            ViewBag.IsEnableBlankVote = voting.IsEnableBlankVote;
+
+            var state = db.States.Find(voting.StateId);
+
+            ViewBag.StateDescripcion = state.Descripcion;
 
             return View(view);
         }
@@ -281,7 +368,6 @@ namespace OnlineVoting.Controllers
                 v.DateTimeStart <= DateTime.Now &&
                 v.DateTimeEnd >= DateTime.Now)
                 .Include(v => v.Candidates)
-                //.Include(v => v.VotingGroups)
                 .Include(v => v.State)
                 .ToList();
 
@@ -350,7 +436,7 @@ namespace OnlineVoting.Controllers
         {
             if (ModelState.IsValid)
             {
-                //no meter 2 veces un candidato
+                //så man inte lägger inte samma kandidat två gånger 
                 var candidate = db.Candidates
                     .Where(c => c.VotingId == view.VotingId &&
                                 c.UserId == view.UserId)
@@ -358,7 +444,7 @@ namespace OnlineVoting.Controllers
 
                 if (candidate != null)
                 {
-                    //another way error
+                    //om canditaten redan fins i valet
                     ModelState.AddModelError(string.Empty, "The candidate already belongs to voting");
                     //ViewBag.Error = "The group already belongs to voting";
                     ViewBag.UserId = new SelectList(
@@ -434,6 +520,7 @@ namespace OnlineVoting.Controllers
                     IsEnableBlankVote = voting.IsEnableBlankVote,
                     IsForAllUsers = voting.IsForAllUsers,
                     QuantityBlankVotes = voting.QuantityBlankVotes,
+                    QuantityVotes = voting.QuantityVotes,
                     Remarks = voting.Remarks,
                     StateId = voting.StateId,
                     State = voting.State,
@@ -484,9 +571,9 @@ namespace OnlineVoting.Controllers
             };
 
 
+            var state = db.States.Find(voting.StateId);
 
-
-
+            ViewBag.StateDescripcion = state.Descripcion;
 
             return View(view);
         }
@@ -507,7 +594,8 @@ namespace OnlineVoting.Controllers
 
 
 
-            return View(view);
+          return View(view);
+
         }
 
         [HttpPost]
@@ -565,18 +653,38 @@ namespace OnlineVoting.Controllers
             if ("Open" == state.Descripcion)// används för att kontrollera om ett val är på gong eller avslutad, är ett val avslutat så ska man inte kunna ändra något i valt, detta är en funktion som lags till för att bevara valets integritet
             {
                 //DateTime
+                var FixTimeStart = voting.DateTimeStart.ToString("HH:mm");//får tiden från datetime objekt 
+                var FixTimeEnd = voting.DateTimeEnd.ToString("HH:mm");// får tiden från datetime objekt 
+                
+                var V1 = db.Votings.AsNoTracking().Where(p => p.VotingId == voting.VotingId).FirstOrDefault();
+
                 var view = new VotingView
                 {
-                    DateEnd = voting.DateTimeEnd,
-                    DateStart = voting.DateTimeStart,
+                    /* DateEnd = voting.DateTimeEnd,
+                     DateStart = voting.DateTimeStart,
+                     Description = voting.Description,
+                     IsEnabledBlankVote = voting.IsEnableBlankVote,
+                     IsForAllUsers = voting.IsForAllUsers,
+                     Remarks = voting.Remarks,
+                     StateId = voting.StateId,
+                     TimeEnd = voting.DateTimeEnd,
+                     TimeStart = voting.DateTimeStart,
+                     VotingId = voting.VotingId,*/
+
+                    CandidateWinId = voting.CandidateWinId,
+                    DateEnd = voting.DateTimeEnd.Date,
+                    DateStart = voting.DateTimeStart.Date,
+                    TimeStart = DateTime.Parse(FixTimeStart, System.Globalization.CultureInfo.CurrentCulture),// start tid
+                    TimeEnd = DateTime.Parse(FixTimeEnd, System.Globalization.CultureInfo.CurrentCulture),//slut tid 
                     Description = voting.Description,
                     IsEnabledBlankVote = voting.IsEnableBlankVote,
                     IsForAllUsers = voting.IsForAllUsers,
+                    QuantityBlankVotes = V1.QuantityBlankVotes,
+                    QuantityVotes = V1.QuantityVotes,
                     Remarks = voting.Remarks,
                     StateId = voting.StateId,
-                    TimeEnd = voting.DateTimeEnd,
-                    TimeStart = voting.DateTimeStart,
                     VotingId = voting.VotingId,
+
                 };
 
                 ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion", voting.StateId);
@@ -600,18 +708,20 @@ namespace OnlineVoting.Controllers
             //Voting voting1 = db.Votings.Find(view.VotingId);
             // används för att inte Entity Framework inte ska binda sig till state modelen så att den längre ner kan updateras utan problem
             var V1 = db.Votings.AsNoTracking().Where(p => p.VotingId == view.VotingId).FirstOrDefault();
-
             var state = db.States.Find(V1.StateId);
 
             // används här i den här post funktionen för att hindra post attacker som kan göras genom URL, man postar ändrignar som int ska gå att göras
-            if ("Open" == state.Descripcion)// används för att kontrollera om ett val är på gong eller avslutad, är ett val avslutat så ska man inte kunna ändra något i valt, detta är en funktion som lags till för att bevara valets integritet
+            if ("Open" == state.Descripcion & V1.QuantityVotes == view.QuantityVotes & V1.QuantityBlankVotes == view.QuantityBlankVotes & V1.CandidateWinId == view.CandidateWinId)// används för att kontrollera om ett val är på gong eller avslutad, är ett val avslutat så ska man inte kunna ändra något i valt, detta är en funktion som lags till för att bevara valets integritet
             {
                 if (ModelState.IsValid)
                 {
+
+                    TimeSpan timeOfEnd = view.TimeEnd.TimeOfDay;// kommer användas för att längre ner slå ihop tid och datume 
+                    TimeSpan timeOfStart = view.TimeStart.TimeOfDay;// kommer användas för att längre ner slå ihop tid och datume 
                     //DateTime
                     var voting = new Voting
                     {
-                        DateTimeEnd = view.DateEnd
+                        /*DateTimeEnd = view.DateEnd
                                       .AddHours(view.TimeEnd.Hour)
                                       .AddMinutes(view.TimeEnd.Minute),
                         DateTimeStart = view.DateStart
@@ -622,7 +732,20 @@ namespace OnlineVoting.Controllers
                         IsForAllUsers = view.IsForAllUsers,
                         Remarks = view.Remarks,
                         StateId = view.StateId,
+                        VotingId = view.VotingId,*/
+
+                        CandidateWinId = view.CandidateWinId,
+                        DateTimeEnd = view.DateEnd.Add(timeOfEnd),// slåtr ihop tid i datetime objekt 
+                        DateTimeStart = view.DateStart.Add(timeOfStart),// slåtr ihop tid i datetime objekt 
+                        Description = view.Description,
+                        IsEnableBlankVote = view.IsEnabledBlankVote,
+                        IsForAllUsers = view.IsForAllUsers,
+                        QuantityBlankVotes = view.QuantityBlankVotes,
+                        QuantityVotes = view.QuantityVotes,
+                        Remarks = view.Remarks,
+                        StateId = view.StateId,
                         VotingId = view.VotingId,
+
                     };
 
                     db.Entry(voting).State = EntityState.Modified;

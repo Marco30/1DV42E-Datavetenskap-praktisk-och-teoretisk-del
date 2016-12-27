@@ -42,7 +42,7 @@ namespace OnlineVoting.Models
         public bool IsForAllUsers { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
-        [Display(Name = "Is enabled blank vote?")]
+        [Display(Name = "Enabled blank vote?")]
         public bool IsEnableBlankVote { get; set; }
 
         [Display(Name = "Quantity votes")]

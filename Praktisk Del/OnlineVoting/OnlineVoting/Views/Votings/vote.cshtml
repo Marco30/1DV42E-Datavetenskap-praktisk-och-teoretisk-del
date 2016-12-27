@@ -12,11 +12,14 @@
                 <dt>
                     @Html.DisplayNameFor(model => model.State.Descripcion)
                 </dt>
+                <dd>
+                    @ViewBag.StateDescripcion
+                </dd>
                 <dt>
                     @Html.DisplayNameFor(model => model.Description)
                 </dt>
                 <dd>
-                    <h2>    @Html.DisplayFor(model => model.Description)</h2>
+                    @Html.DisplayFor(model => model.Description)
                 </dd>
                 <dt>
                     @Html.DisplayNameFor(model => model.Remarks)
@@ -36,12 +39,15 @@
                 <dd>
                     @Html.DisplayFor(model => model.DateTimeEnd)
                 </dd>
-                <dt>
+                
+                @*<dt>
                     @Html.DisplayNameFor(model => model.IsForAllUsers)
-                </dt>
+                 </dt>
+
                 <dd>
-                    @Html.DisplayFor(model => model.IsForAllUsers)
-                </dd>
+                     @Html.DisplayFor(model => model.IsForAllUsers)
+                 </dd> *@
+
                 <dt>
                     @Html.DisplayNameFor(model => model.IsEnableBlankVote)
                 </dt>
@@ -56,6 +62,34 @@
     @*groups*@
     @*candidates*@
     <div class="col-md-6">
+
+        <h4>Blank Vot</h4>
+
+@if (Model.MyCandidate.Count > 0 & true == ViewBag.IsEnableBlankVote)
+{
+        @Html.ActionLink(
+                                 "Vote",
+                                 "VoteForBlankCandidate",
+                                 new
+                                 {
+                                     candidateId = Model.MyCandidate[0].CandidateId,
+                                     votingId = Model.VotingId
+                                 },
+
+                              new
+                              {
+                                  @class = "btn btn-primary",
+                                  onclick = "return confirm('Are you sure you want to Vote Blank?');"
+                              })
+}
+else if (Model.MyCandidate.Count == 0)
+{
+    <h5>No candidates added yet</h5>
+}
+else
+{
+    <h5>blank vote is not allowed</h5>
+}
         <h4>Candidates</h4>
         @if (Model.MyCandidate.Count > 0)
         {
@@ -104,7 +138,7 @@
         }
         else
         {
-            <h5>Not candidates added yet</h5>
+            <h5>No candidates added yet</h5>
         }
     </div>
 </div>

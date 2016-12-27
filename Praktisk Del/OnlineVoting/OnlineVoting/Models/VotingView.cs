@@ -57,6 +57,16 @@ namespace OnlineVoting.Models
         [Display(Name = "Is enabled blank vote?")]
         public bool IsEnabledBlankVote { get; set; }
 
+        // testar 
+        [Display(Name = "Quantity votes")]
+        public int QuantityVotes { get; set; }
+
+        [Display(Name = "Quantity blank votes")]
+        public int QuantityBlankVotes { get; set; }
+
+        [Display(Name = "Winner")]
+        public int CandidateWinId { get; set; }
+
 
     }
 }

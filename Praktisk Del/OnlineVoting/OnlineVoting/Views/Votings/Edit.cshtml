@@ -63,13 +63,15 @@
                 @Html.ValidationMessageFor(model => model.TimeEnd)
             </div>
         </div>
-        <div class="form-group">
+
+        @*<div class="form-group">
             @Html.LabelFor(model => model.IsForAllUsers, new { @class = "control-label col-md-2" })
             <div class="col-md-10">
                 @Html.EditorFor(model => model.IsForAllUsers)
                 @Html.ValidationMessageFor(model => model.IsForAllUsers)
             </div>
-        </div>
+        </div> *@
+
         <div class="form-group">
             @Html.LabelFor(model => model.IsEnabledBlankVote, new { @class = "control-label col-md-2" })
             <div class="col-md-10">
@@ -77,6 +79,10 @@
                 @Html.ValidationMessageFor(model => model.IsEnabledBlankVote)
             </div>
         </div>
+
+        @Html.HiddenFor(model => model.CandidateWinId)
+        @Html.HiddenFor(model => model.QuantityVotes)
+        @Html.HiddenFor(model => model.QuantityBlankVotes)
 
         <div class="form-group">
             <div class="col-md-offset-2 col-md-10">
