@@ -583,8 +583,17 @@ namespace OnlineVoting.Controllers
         [Authorize(Roles = "Admin")]
         public ActionResult Create()// visar view där man skapar valet 
         {
-            ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion");
+           var S1 = db.States.ToList();
 
+            foreach (var item in S1)// gör så att drop down listan som visas i skapar viewn får Open state vald 
+            { 
+
+                 if ("Open" == item.Descripcion)
+                { 
+                ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion", item.StateId);
+                }
+
+            }
             //DateTime
             var view = new VotingView
             {

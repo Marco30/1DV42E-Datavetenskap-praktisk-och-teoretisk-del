@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@ViewBag.Title - My ASP.NET Application</title>
     @Styles.Render("~/Content/css")
-    @Scripts.Render("~/bundles/modernizr")
+        @Scripts.Render("~/bundles/modernizr")
+    <link href="~/Content/FormStyle.css" rel="stylesheet" />
 </head>
 <body>
     <div class="navbar navbar-inverse navbar-fixed-top">
@@ -56,6 +57,15 @@
     </div>
     @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/bootstrap")
+
+    @Scripts.Render("~/Scripts/jquery.timepicker.min.js") <!--script som har Timepicker jquery funktionen som gör att man kan välja tid i en lista -->
+    @Scripts.Render("/Scripts/jquery-ui.min.js")<!--script som har Datepicker jquery funktionen som gör att man kan välja datum ur en kalender-->
+
+    @Scripts.Render("~/Scripts/Focus,TimeAndDate.js")<!--Egen liten script som aktiverar (Date,Tame) jquery funktionerna som finns i dem andra filerna och har också en focus funktion som fokuserar på en specifik textruta -->
+
+    <link href="~/Content/jquery.timepicker.css" rel="stylesheet" /><!--CSS till TimePicker-->
+    <link href="~/Content/jquery-ui.min.css" rel="stylesheet" /><!--CSS till DatePicker-->
+
     @RenderSection("scripts", required: false)
 </body>
 </html>
