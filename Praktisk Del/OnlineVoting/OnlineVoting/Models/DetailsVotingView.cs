@@ -57,6 +57,7 @@ namespace OnlineVoting.Models
 
         public List<Candidate> Candidates { get; set; }
 
+        public List<User> Users { get; set; }// testar 
 
     }
 }

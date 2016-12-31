@@ -23,8 +23,6 @@ namespace OnlineVoting.Models
 
         public virtual Voting Voting { get; set; }
 
-        public virtual User User { get; set; }
-
         public virtual Candidate Candidate { get; set; }
     }
 }

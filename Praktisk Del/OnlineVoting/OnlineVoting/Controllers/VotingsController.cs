@@ -9,6 +9,8 @@ using System.Web.Mvc;
 using OnlineVoting.Models;
 using System.Data.SqlClient;
 using System.Configuration;
+using Microsoft.AspNet.Identity;
+using Microsoft.AspNet.Identity.EntityFramework;
 
 namespace OnlineVoting.Controllers
 {
@@ -38,8 +40,6 @@ namespace OnlineVoting.Controllers
             }
             return RedirectToAction("Index");
         }
-
-
 
 
         public ActionResult ShowResults(int id)// visar resultat på valet med vinar och lista på alla deltagar och antal röster dem fåt
@@ -113,8 +113,6 @@ namespace OnlineVoting.Controllers
             }
 
         }
-
-
 
 
         [Authorize(Roles = "User")]
@@ -235,7 +233,7 @@ namespace OnlineVoting.Controllers
             return false;
         }
 
-        //---------------------------------------------------- testar blankröst  
+        //---------------------------------------------------- Testar Blankröst  
 
         [Authorize(Roles = "User")]
         public ActionResult VoteForBlankCandidate(int candidateId, int votingId)// röstnings funktion, validerign av användare för få möjlighet att rösta blankt 
@@ -411,31 +409,171 @@ namespace OnlineVoting.Controllers
             return state;
         }
 
-
+        //----------------------------------------------------  Testar ny AddCandidate
 
         [Authorize(Roles = "Admin")]
-        public ActionResult AddCandidate(int id)// visar view med en drop down lista där man kan läga till användare till valet 
+        public ActionResult _SearchAndAddCandidate(int id)// visar en lista på alla användare man kan läga till i ett val 
         {
-            var view = new AddCandidateView
+            List<int> RemoveID = new List<int>();
+
+            var users = db.Users.ToList();
+
+            for (var i = 0; i < users.Count; i++)
             {
-                VotingId = id,
-            };
+                //nsole.WriteLine("Amount is {0} and type is {1}", myMoney[i].amount, myMoney[i].type);
+                var UserId = users[i].UserId;
 
-            ViewBag.UserId = new SelectList(
-                db.Users.OrderBy(u => u.FirstName)
-               .ThenBy(u => u.LastName),
-               "UserId",
-               "FullName");
+                var candidate = db.Candidates
+                   .Where(c => c.VotingId == id &&
+                               c.UserId == UserId)
+                               .FirstOrDefault();
 
-            return View(view);
+                var userContext = new ApplicationDbContext();
+                var userManager = new UserManager<ApplicationUser>(new UserStore<ApplicationUser>(userContext));
+                var userASP = userManager.FindByEmail(users[i].UserName);
+
+              
+                if (userManager.IsInRole(userASP.Id, "Admin"))
+                {
+                        RemoveID.Add(i);
+                }
+                else if (candidate != null)//om canditaten redan fins i valet startat fi statsen som kommer spara index för att sen ta bort den användaren från user listan på Users som kan lägas till i valet 
+                {
+                    RemoveID.Add(i);
+                }
+            }
+
+            for (int i = RemoveID.Count - 1; i >= 0; i--)
+            {
+                    users.RemoveAt(RemoveID[i]);
+            }
+
+ 
+
+            ViewBag.VotingId = id;
+
+            if (TempData["Message"] != null)
+            {
+                ViewBag.Message = TempData["Message"].ToString();// visar medelande som tagit med fron Edit eller delit view
+            }
+
+            return PartialView(users);
+
         }
+
+    
+        //Post AddCandidate
+        [HttpPost]
+        public ActionResult _SearchAndAddCandidate(String SearchText, int id)// visar den användare man sökt på 
+        {
+            List<User> UsersList;
+
+            if (string.IsNullOrEmpty(SearchText))
+            {
+                UsersList = db.Users.ToList();
+            }
+            else
+            {
+                if (SearchText.Contains(" "))
+                {
+                    string[] array = SearchText.Split(new char[] { ' ' }, 2);
+
+                    var FirstNameText = array[0];
+                    var LastNameText = array[1];
+
+                    UsersList = db.Users.Where(x => x.FirstName.StartsWith(FirstNameText) & x.LastName.StartsWith(LastNameText)).ToList();// söker efter förnamn och efternam man sökt på i DB för att visas i viewn 
+                }
+                else
+                {
+                    UsersList = db.Users.Where(x => x.FirstName.StartsWith(SearchText)).ToList();// söker efter förnamn man sökt på i DB för att visas i viewn 
+                } 
+            }
+
+            //test------------------------------------------------
+
+            //List<int> RemoveID = new List<int>();
+
+            for (var i = 0; i < UsersList.Count; i++)
+            {
+                //nsole.WriteLine("Amount is {0} and type is {1}", myMoney[i].amount, myMoney[i].type);
+              /*  var UserId = UsersList[i].UserId;
+
+                var candidate = db.Candidates
+                   .Where(c => c.VotingId == id &&
+                               c.UserId == UserId)
+                               .FirstOrDefault();*/
+
+                var userContext = new ApplicationDbContext();
+                var userManager = new UserManager<ApplicationUser>(new UserStore<ApplicationUser>(userContext));
+                var userASP = userManager.FindByEmail(UsersList[i].UserName);
+
+
+                if (userManager.IsInRole(userASP.Id, "Admin"))
+                {
+                    //RemoveID.Add(i);
+                    ViewBag.Admin = 1;
+                }
+                else
+                {
+                    ViewBag.Admin = 0;
+                }
+               /* else if (candidate != null)//om canditaten redan fins i valet startat fi statsen som kommer spara index för att sen ta bort den användaren från user listan på Users som kan lägas till i valet 
+                {
+                    RemoveID.Add(i);
+                }*/
+            }
+
+            /*for (int i = RemoveID.Count - 1; i >= 0; i--)
+            {
+                UsersList.RemoveAt(RemoveID[i]);
+            }*/
+
+            //-------------------------------------------------------
+
+
+            ViewBag.VotingId = id;
+
+            return PartialView("_SearchAndAddCandidate", UsersList);
+            //return RedirectToAction(string.Format("Details/{0}", ViewBag.VotingId));
+
+        }
+
+        public JsonResult GetNameSearch(String term)// funktion som används av autocomplete jquery
+        {
+                List<String> UsersList;// skapar lista som kommer användas för att spara alla User från DB
+
+
+            if (term.Contains(" "))
+            {
+                string[] array = term.Split(new char[] { ' ' }, 2);
+
+                var FirstNameText = array[0];
+                var LastNameText = array[1];
+
+                UsersList = db.Users.Where(x => x.FirstName.StartsWith(FirstNameText) & x.LastName.StartsWith(LastNameText)).Select(y => y.FirstName + " " + y.LastName).ToList();// söker efter förnamn och efternam man sökt på i DB för att visas på autocomplete 
+
+            }
+            else
+            {
+                UsersList = db.Users.Where(x => x.FirstName.StartsWith(term)).Select(y => y.FirstName + " " + y.LastName).ToList();// söker efter förnamnet man sökt på i DB för att visas på autocomplete
+            }
+
+
+            return Json(UsersList, JsonRequestBehavior.AllowGet);
+        }
+
 
         //Post AddCandidate
         [HttpPost]
-        public ActionResult AddCandidate(AddCandidateView view)// postar användare man valt till kandidat
+        public ActionResult MakeUserToCandidate(int UserID, int VotingID, string UserFullName)// postar användare man valt till kandidat
         {
-            if (ModelState.IsValid)
+
+            var view = new AddCandidateView
             {
+                VotingId = VotingID,
+                UserId = UserID,
+            };
+
                 //så man inte lägger inte samma kandidat två gånger 
                 var candidate = db.Candidates
                     .Where(c => c.VotingId == view.VotingId &&
@@ -445,15 +583,23 @@ namespace OnlineVoting.Controllers
                 if (candidate != null)
                 {
                     //om canditaten redan fins i valet
-                    ModelState.AddModelError(string.Empty, "The candidate already belongs to voting");
-                    //ViewBag.Error = "The group already belongs to voting";
-                    ViewBag.UserId = new SelectList(
-                                    db.Users.OrderBy(u => u.FirstName)
-                                    .ThenBy(u => u.LastName),
-                                    "UserId",
-                                    "FullName");
-                    return View(view);
-                }
+                    //ModelState.AddModelError(string.Empty, "The candidate already belongs to voting");
+                //ViewBag.Error = "The group already belongs to voting";
+                /*ViewBag.UserId = new SelectList(
+                                db.Users.OrderBy(u => u.FirstName)
+                                .ThenBy(u => u.LastName),
+
+                                "UserId",
+                                "FullName");*/
+                //return View(view);
+                TempData["Message"] = "(" + UserFullName + ") is already a candidate in this election";
+                //return RedirectToAction("_SearchAndAddCandidate", "Votings", new { id = view.VotingId });
+                //return Json(new { url = Url.Action("_SearchAndAddCandidate", new { id = VotingID }) });
+                //return RedirectToAction("_SearchAndAddCandidate", "Votings", new { id = view.VotingId });
+                return Json(new { url = Url.Action("Details", new { id = VotingID }) });
+                //return PartialView("_SearchAndAddCandidat", new { id = view.VotingId });
+
+            }
 
                 candidate = new Candidate
                 {
@@ -464,17 +610,22 @@ namespace OnlineVoting.Controllers
 
                 db.Candidates.Add(candidate);
                 db.SaveChanges();
-                return RedirectToAction(string.Format("Details/{0}", view.VotingId));
-            }
-
-            ViewBag.UserId = new SelectList(
-                db.Users.OrderBy(u => u.FirstName)
-               .ThenBy(u => u.LastName),
-               "UserId",
-               "FullName");
-            return View(view);
+           
+            TempData["Message"] = "(" + UserFullName + ") is add to this election";
+            ///return PartialView("_SearchAndAddCandidat", new { id = view.VotingId });
+            //return RedirectToAction("_SearchAndAddCandidat", "Votings", new { id = view.VotingId });
+            //return Json(new { ok = true, url = Url.Action("Details", "Votings", new { id = view.VotingId }) });
+            return Json(new { url = Url.Action("Details", new { id = VotingID }) });
+            /* ViewBag.UserId = new SelectList(
+                 db.Users.OrderBy(u => u.FirstName)
+                .ThenBy(u => u.LastName),
+                "UserId",
+                "FullName");*/
 
         }
+
+        //-----------------------------------------------------------------------------------------
+
 
 
         [Authorize(Roles = "Admin")]
@@ -575,6 +726,10 @@ namespace OnlineVoting.Controllers
 
             ViewBag.StateDescripcion = state.Descripcion;
 
+            //testar-------------
+            ViewBag.UserModel = db.Votings.ToList();
+            //-------------------
+
             return View(view);
         }
 
@@ -633,10 +788,15 @@ namespace OnlineVoting.Controllers
 
                 db.Votings.Add(voting);
                 db.SaveChanges();
-                return RedirectToAction("Index");
+
+                //var c = db.Votings.FirstOrDefault(s => s.VotingId = voting.VotingId);
+
+                //return RedirectToAction("Index");
+                return RedirectToAction("Details",new { id = voting.VotingId });
             }
 
             ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion", view.StateId);
+
             return View(view);
         }
 

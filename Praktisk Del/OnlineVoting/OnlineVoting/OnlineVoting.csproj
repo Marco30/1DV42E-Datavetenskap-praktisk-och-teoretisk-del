@@ -260,6 +260,8 @@
     <None Include="Scripts\jquery.validate-vsdoc.js" />
     <Content Include="Scripts\jquery-ui.min.js" />
     <Content Include="Scripts\jquery.timepicker.min.js" />
+    <Content Include="Scripts\jquery.unobtrusive-ajax.js" />
+    <Content Include="Scripts\jquery.unobtrusive-ajax.min.js" />
     <Content Include="Scripts\jquery.validate.js" />
     <Content Include="Scripts\jquery.validate.min.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
@@ -307,13 +309,13 @@
     <Content Include="Views\Votings\ShowResults.cshtml" />
     <Content Include="Views\Votings\Results.cshtml" />
     <Content Include="Views\Votings\MyVotings.cshtml" />
-    <Content Include="Views\Votings\AddCandidate.cshtml" />
     <Content Include="Views\Votings\Index.cshtml" />
     <Content Include="Views\Votings\Details.cshtml" />
     <Content Include="Views\Votings\Create.cshtml" />
     <Content Include="Views\Votings\Edit.cshtml" />
     <Content Include="Views\Votings\Delete.cshtml" />
     <Content Include="Views\Votings\Vote.cshtml" />
+    <Content Include="Views\Votings\_SearchAndAddCandidate.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
