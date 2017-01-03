@@ -642,9 +642,120 @@ namespace OnlineVoting.Controllers
             return RedirectToAction(string.Format("Details/{0}", candidate.VotingId));
         }
 
+        //-----------------test index sök------------------------------------------------------------------------
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        public ActionResult IndexSearch(String SearchText)// visar index view meda alla valen för admin och om den är avslutad så visas vinare
+        {
+            List<Voting> ElectionList;
+
+            var views = new List<VotingIndexView>();
+
+            if (string.IsNullOrEmpty(SearchText))
+            {
+                ElectionList = db.Votings.Include(v => v.State).ToList();
+            }
+            else
+            {
+                    ElectionList = db.Votings.Where(x => x.Description.StartsWith(SearchText)).ToList();// söker efter förnamn man sökt på i DB för att visas i viewn 
+            }
+
+            foreach (var Election in ElectionList)
+            {
+                User user = null;
+                if (Election.CandidateWinId != 0)
+                {
+                    user = db.Users.Find(Election.CandidateWinId);
+                }
+
+                views.Add(new VotingIndexView
+                {
+                    CandidateWinId = Election.CandidateWinId,
+                    DateTimeEnd = Election.DateTimeEnd,
+                    DateTimeStart = Election.DateTimeStart,
+                    Description = Election.Description,
+                    IsEnableBlankVote = Election.IsEnableBlankVote,
+                    IsForAllUsers = Election.IsForAllUsers,
+                    QuantityBlankVotes = Election.QuantityBlankVotes,
+                    QuantityVotes = Election.QuantityVotes,
+                    Remarks = Election.Remarks,
+                    StateId = Election.StateId,
+                    State = Election.State,
+                    VotingId = Election.VotingId,
+                    Winner = user,
+
+                });
+            }
+
+
+            return PartialView("_ElectionInfo", views);
+            //return RedirectToAction(string.Format("Details/{0}", ViewBag.VotingId));
+        }
+
+        public JsonResult GetElectionSearch(String term)// funktion som används av autocomplete jquery
+        {
+            List<String> ElectionList;// skapar lista som kommer användas för att spara alla User från DB
+
+
+                ElectionList = db.Votings.Where(x => x.Description.StartsWith(term)).Select(y => y.Description).ToList();// söker efter förnamnet man sökt på i DB för att visas på autocomplete
 
 
 
+            return Json(ElectionList, JsonRequestBehavior.AllowGet);
+        }
+
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        public ActionResult IndexOrderBy(String SearchText)// visar index view meda alla valen för admin och om den är avslutad så visas vinare
+        {
+            List<Voting> ElectionList;
+
+            var views = new List<VotingIndexView>();
+
+            if (string.IsNullOrEmpty(SearchText))
+            {
+                ElectionList = db.Votings.Include(v => v.State).ToList();
+            }
+            else
+            {
+                ElectionList = db.Votings.Where(x => x.Description.StartsWith(SearchText)).ToList();// söker efter förnamn man sökt på i DB för att visas i viewn 
+            }
+
+            foreach (var Election in ElectionList)
+            {
+                User user = null;
+                if (Election.CandidateWinId != 0)
+                {
+                    user = db.Users.Find(Election.CandidateWinId);
+                }
+
+                views.Add(new VotingIndexView
+                {
+                    CandidateWinId = Election.CandidateWinId,
+                    DateTimeEnd = Election.DateTimeEnd,
+                    DateTimeStart = Election.DateTimeStart,
+                    Description = Election.Description,
+                    IsEnableBlankVote = Election.IsEnableBlankVote,
+                    IsForAllUsers = Election.IsForAllUsers,
+                    QuantityBlankVotes = Election.QuantityBlankVotes,
+                    QuantityVotes = Election.QuantityVotes,
+                    Remarks = Election.Remarks,
+                    StateId = Election.StateId,
+                    State = Election.State,
+                    VotingId = Election.VotingId,
+                    Winner = user,
+
+                });
+            }
+
+
+            return PartialView("_ElectionInfo", views);
+            //return RedirectToAction(string.Format("Details/{0}", ViewBag.VotingId));
+        }
+
+        //-----------------------------------------------------------------------------------------
 
         [Authorize(Roles = "Admin")]
         public ActionResult Index()// visar index view meda alla valen för admin och om den är avslutad så visas vinare
@@ -653,6 +764,7 @@ namespace OnlineVoting.Controllers
             var views = new List<VotingIndexView>();
             var db2 = new OnlineVotingContext();
 
+            var Yearlist = new List<string>();
             //visar info om valet och visar också vinare om vallet är slut förd 
             foreach (var voting in votings)
             {
@@ -679,6 +791,10 @@ namespace OnlineVoting.Controllers
                     Winner = user,
 
                 });
+
+                var year = voting.DateTimeStart.ToString("yyyy");
+
+                Yearlist.Add(year);
             }
 
             if (TempData["Message"] != null)
@@ -686,11 +802,79 @@ namespace OnlineVoting.Controllers
                 ViewBag.Message = TempData["Message"].ToString();// visar medelande som tagit med fron Edit view
             }
 
+            //-----------------------------dropdown list
+
+            Yearlist = Yearlist.Distinct().ToList();
+
+            ViewBag.SelectedYear = new SelectList(Yearlist);
+
+            ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion");
+
+            //var Monthslist = new List<String>();
+
+            //ViewBag.SelectedMonths = new SelectList(Monthslist);
+
+
+            var Monthslist = new List<MontsList>();
+
+           ViewBag.SelectedMonths = new SelectList(Monthslist, "MonthsID", "Months");
+
+            //-----------------------------------------
+
             return View(views);
         }
 
+        //------------------------------------------ test månad 
+        //[HttpPost]
+        public JsonResult FetchMonths(int selectedYear)
+        {
+
+            int Year = selectedYear; //Int32.Parse(selectedYear);
+
+            var votings = db.Votings.Where(x => x.DateTimeStart.Year == Year).ToList();
+
+            var MontsListsOfYear = new List<MontsList>();
+
+            var MontsList = new List<String>();
+
+            //visar info om valet och visar också vinare om vallet är slut förd 
+            foreach (var voting in votings)
+            {
 
 
+                var Months = voting.DateTimeStart.ToString("MM");
+
+                MontsList.Add(Months);
+                
+            }
+
+            MontsList = MontsList.Distinct().ToList();
+
+            int i = 0;
+
+            foreach (var M in MontsList)
+            {
+
+                MontsListsOfYear.Add(new MontsList
+                {
+                     MonthsID = i++,
+                     Months = M,
+                });
+
+
+
+            }
+
+            //var sl = Monthslist.Select(s => new SelectListItem { Value = s }).ToList();
+            //ViewBag.SelectedMonths = new SelectList(MonthsL, "MonthsID", "Months");
+           
+            //IEnumerable<int> months = db.yourTable().Where(x => x.Year == selectedYear).Select(x => x.Month);
+
+            //return Json(ViewBag.SelectedMonths, JsonRequestBehavior.AllowGet);
+            return Json(MontsListsOfYear, JsonRequestBehavior.AllowGet);
+        }
+
+        //-------------------------------------------
 
         [Authorize(Roles = "Admin")]
         public ActionResult Details(int? id)// visar detaljerad info om valet
