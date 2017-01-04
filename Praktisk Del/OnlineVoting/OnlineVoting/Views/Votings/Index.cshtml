@@ -1,4 +1,5 @@
 ﻿@model IEnumerable<OnlineVoting.Models.VotingIndexView>
+
 @{
     ViewBag.Title = "Index";
 }
@@ -50,13 +51,17 @@
         <div class="col-md-6">
 
 
-
-            @using (Html.BeginForm())
-            {
+@using (Ajax.BeginForm("IndexOrderBy", "Votings", null, new AjaxOptions
+{
+    InsertionMode = InsertionMode.Replace,
+    HttpMethod = "POST",
+    UpdateTargetId = "ResultTarget"
+})) //skickar Id till post funktionen i controller
+{
                 <table class="table" id="TabelOrder">
                     <tr >
                         <th colspan="5" scope="colgroup">
-                            Order by year or the status of election
+                            Order by status of election or by year
                         </th>
                     </tr>
 
@@ -75,7 +80,7 @@
                         <td>
                           
 
-                                @Html.DropDownList("StateId", "Select")
+                                @Html.DropDownList("StateId", "Select" )
 
                         </td>
                         <td>
@@ -90,9 +95,13 @@
 
                             </div>
                         </td>
-                    <tr>
+       
+<tr>
                 </table>
-            }
+
+                <input type="submit" value="Order By" class="btn btn-primary" />
+                <hr />
+}
 
 
         </div>

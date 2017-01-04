@@ -646,7 +646,7 @@ namespace OnlineVoting.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPost]
-        public ActionResult IndexSearch(String SearchText)// visar index view meda alla valen för admin och om den är avslutad så visas vinare
+        public ActionResult IndexSearch(String SearchText)// gör sökning på val namn i index view och ger resultatet 
         {
             List<Voting> ElectionList;
 
@@ -693,7 +693,7 @@ namespace OnlineVoting.Controllers
             //return RedirectToAction(string.Format("Details/{0}", ViewBag.VotingId));
         }
 
-        public JsonResult GetElectionSearch(String term)// funktion som används av autocomplete jquery
+        public JsonResult GetElectionSearch(String term)// funktion som används av autocomplete jquery i index view för sökning på val namn  
         {
             List<String> ElectionList;// skapar lista som kommer användas för att spara alla User från DB
 
@@ -705,23 +705,78 @@ namespace OnlineVoting.Controllers
             return Json(ElectionList, JsonRequestBehavior.AllowGet);
         }
 
+        //-------------testa indexorderby----------------------------
 
         [Authorize(Roles = "Admin")]
         [HttpPost]
-        public ActionResult IndexOrderBy(String SearchText)// visar index view meda alla valen för admin och om den är avslutad så visas vinare
+        public ActionResult IndexOrderBy(String StateId, string SelectedYear, string SelectedMonths)// visar index view meda alla valen för admin och om den är avslutad så visas vinare
         {
+            if (SelectedMonths == "0")
+            {
+                SelectedMonths = "";
+            }
+
             List<Voting> ElectionList;
 
-            var views = new List<VotingIndexView>();
+            int MonthsNum = 0;
 
-            if (string.IsNullOrEmpty(SearchText))
+
+            var SMonths = 0;
+
+            if (SelectedMonths !="")
+            { 
+                SMonths = Int32.Parse(SelectedMonths);
+
+                foreach (var Months in TempData["List"] as List<MonthsList>)
+                {
+                    if (SMonths == Months.MonthsID)
+                    {
+                        MonthsNum = Months.Months;
+                    }
+                }
+            }
+            
+            int SID = 0;
+            int Syear = 0; 
+
+            if (StateId != ""  & SelectedYear != "" & SelectedMonths != "")
             {
-                ElectionList = db.Votings.Include(v => v.State).ToList();
+                SID = Int32.Parse(StateId);
+                Syear = Int32.Parse(SelectedYear);
+
+                ElectionList = db.Votings.Where(x => x.StateId == SID & x.DateTimeStart.Year == Syear & x.DateTimeStart.Month == MonthsNum).ToList();// söker efter förnamn man sökt på i DB för att visas i viewn 
+            }
+            else if (StateId != "" & SelectedYear == "" & SelectedMonths == "")
+            {
+                SID = Int32.Parse(StateId);
+                ElectionList = db.Votings.Where(x => x.StateId == SID).ToList();
+            }
+            else if (StateId == "" & SelectedYear != "" & SelectedMonths != "")
+            {
+                Syear = Int32.Parse(SelectedYear);
+                ElectionList = db.Votings.Where(x => x.DateTimeStart.Year == Syear & x.DateTimeStart.Month == MonthsNum).ToList();
+            }
+            else if (StateId != "" & SelectedYear != "" & SelectedMonths == "")
+            {
+                SID = Int32.Parse(StateId);
+                Syear = Int32.Parse(SelectedYear);
+                ElectionList = db.Votings.Where(x => x.StateId == SID & x.DateTimeStart.Year == Syear).ToList();
+            }
+            else if (StateId == "" & SelectedYear != "" & SelectedMonths == "")
+            {
+                Syear = Int32.Parse(SelectedYear);
+                ElectionList = db.Votings.Where(x => x.DateTimeStart.Year == Syear).ToList();
+            }
+            else if (StateId == "" & SelectedYear == "" & SelectedMonths != "")
+            {
+                ElectionList = db.Votings.Where(x => x.DateTimeStart.Month == MonthsNum).ToList();
             }
             else
             {
-                ElectionList = db.Votings.Where(x => x.Description.StartsWith(SearchText)).ToList();// söker efter förnamn man sökt på i DB för att visas i viewn 
+                ElectionList = db.Votings.Include(v => v.State).ToList();
             }
+
+            var views = new List<VotingIndexView>();
 
             foreach (var Election in ElectionList)
             {
@@ -750,9 +805,11 @@ namespace OnlineVoting.Controllers
                 });
             }
 
+            TempData["List"] = TempData["List"];
+
 
             return PartialView("_ElectionInfo", views);
-            //return RedirectToAction(string.Format("Details/{0}", ViewBag.VotingId));
+
         }
 
         //-----------------------------------------------------------------------------------------
@@ -815,7 +872,7 @@ namespace OnlineVoting.Controllers
             //ViewBag.SelectedMonths = new SelectList(Monthslist);
 
 
-            var Monthslist = new List<MontsList>();
+            var Monthslist = new List<MonthsList>();
 
            ViewBag.SelectedMonths = new SelectList(Monthslist, "MonthsID", "Months");
 
@@ -825,17 +882,19 @@ namespace OnlineVoting.Controllers
         }
 
         //------------------------------------------ test månad 
-        //[HttpPost]
-        public JsonResult FetchMonths(int selectedYear)
+
+
+    //[HttpPost]
+    public JsonResult FetchMonths(int selectedYear)
         {
 
             int Year = selectedYear; //Int32.Parse(selectedYear);
 
             var votings = db.Votings.Where(x => x.DateTimeStart.Year == Year).ToList();
 
-            var MontsListsOfYear = new List<MontsList>();
+            var MontsListsOfYear = new List<MonthsList>();
 
-            var MontsList = new List<String>();
+            var MontsList = new List<int>();
 
             //visar info om valet och visar också vinare om vallet är slut förd 
             foreach (var voting in votings)
@@ -843,19 +902,19 @@ namespace OnlineVoting.Controllers
 
 
                 var Months = voting.DateTimeStart.ToString("MM");
-
-                MontsList.Add(Months);
+                MontsList.Add(Int32.Parse(Months));
                 
             }
 
             MontsList = MontsList.Distinct().ToList();
-
+            MontsList.Add(0);
+            MontsList.Sort();
             int i = 0;
 
             foreach (var M in MontsList)
             {
 
-                MontsListsOfYear.Add(new MontsList
+                MontsListsOfYear.Add(new MonthsList
                 {
                      MonthsID = i++,
                      Months = M,
@@ -866,8 +925,10 @@ namespace OnlineVoting.Controllers
             }
 
             //var sl = Monthslist.Select(s => new SelectListItem { Value = s }).ToList();
-            //ViewBag.SelectedMonths = new SelectList(MonthsL, "MonthsID", "Months");
-           
+
+            TempData["List"] = MontsListsOfYear.OrderBy(s => s.Months).ToList();
+
+
             //IEnumerable<int> months = db.yourTable().Where(x => x.Year == selectedYear).Select(x => x.Month);
 
             //return Json(ViewBag.SelectedMonths, JsonRequestBehavior.AllowGet);
@@ -875,6 +936,7 @@ namespace OnlineVoting.Controllers
         }
 
         //-------------------------------------------
+
 
         [Authorize(Roles = "Admin")]
         public ActionResult Details(int? id)// visar detaljerad info om valet
