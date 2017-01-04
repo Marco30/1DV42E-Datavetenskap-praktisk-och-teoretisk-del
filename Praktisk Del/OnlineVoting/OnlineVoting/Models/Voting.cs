@@ -14,7 +14,7 @@ namespace OnlineVoting.Models
         public int VotingId { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
-        [StringLength(100, ErrorMessage = "The field {0} can contain maximum {1} and minimum {2} characters", MinimumLength = 10)]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "The field {0} can contain maximum {1} and minimum {2} characters")]
         [Display(Name = "Voting Description")]
         public string Description { get; set; }
 
@@ -28,13 +28,13 @@ namespace OnlineVoting.Models
         [Required(ErrorMessage = "The field {0} is required")]
         [Display(Name = "Date time start")]
         [DataType(DataType.DateTime)]
-        [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd hh:mm tt}", ApplyFormatInEditMode = true)]
+        [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd HH:mm tt}", ApplyFormatInEditMode = true)]
         public DateTime DateTimeStart { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
         [Display(Name = "Date time end")]
         [DataType(DataType.DateTime)]
-        [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd hh:mm tt}", ApplyFormatInEditMode = true)]
+        [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd HH:mm tt}", ApplyFormatInEditMode = true)]
         public DateTime DateTimeEnd { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]

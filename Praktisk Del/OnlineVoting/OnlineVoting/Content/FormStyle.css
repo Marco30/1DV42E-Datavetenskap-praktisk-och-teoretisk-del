@@ -1,4 +1,25 @@
-﻿        .text-box.single-line
+﻿       
+/*Tabeller*/
+
+.row {
+    margin-right: -15px;
+    margin-left: -15px;
+    border-bottom: 2px solid;
+    padding-top: 18px;
+    padding-bottom: 18px;
+}
+
+.rowElection {
+    margin-right: -15px;
+    margin-left: -15px;
+    border-bottom: 2px solid;
+    padding-top: 18px;
+    padding-bottom: 18px;
+}
+
+/*-----------*/
+
+ .text-box.single-line
         {
         display: block;
         width: 100%;
@@ -83,6 +104,26 @@
 {
     width: 500px;
 }
+.table td 
+{ 
+	/*border: 1px solid #CC3;
+	border-spacing: 0;
+	height: 100px;*/
+        margin: 0; 
+        padding: 0;
+	border-spacing: 0;
+
+	width: 100px;
+	
+}
+
+
+.IsEditOnlineLabel
+{
+
+}
+
+
 
 #SelectedMonths
         {

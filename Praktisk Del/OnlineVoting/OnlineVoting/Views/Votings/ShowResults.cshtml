@@ -6,9 +6,19 @@
 
 <h2>ShowResults</h2>
 
-<p>
-    @Html.ActionLink("Back To All Results", "Index", "Votings")
-</p>
+@if (User.IsInRole("Admin"))
+{
+    <p>
+        @Html.ActionLink("Back To All Results", "Index", "Votings")
+    </p>
+}
+else
+{
+    <p>
+        @Html.ActionLink("Back To All Results", "Results", "Votings")
+    </p>
+}
+
 
 <p>
     @Html.DisplayNameFor(model => model.Electionname) : @ViewBag.NameOfElection

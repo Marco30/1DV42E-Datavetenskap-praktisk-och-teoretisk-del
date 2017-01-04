@@ -248,6 +248,129 @@ namespace OnlineVoting.Controllers
         }
 
 
+        //---------------------------------------search User--------------------------------------------------
+
+        //Post AddCandidate
+        [HttpPost]
+        public ActionResult _SearchUser(String SearchText)// visar den användare man sökt på 
+        {
+
+            var userContext = new ApplicationDbContext();
+            var userManager = new UserManager<ApplicationUser>(new UserStore<ApplicationUser>(userContext));
+     
+            var usersView = new List<UserIndexView>();
+            var users = new List<User>();
+
+            if (string.IsNullOrEmpty(SearchText))
+            {
+                 users = db.Users.ToList();
+            }
+            else
+            {
+                if (SearchText.Contains(" "))
+                {
+                    string[] array = SearchText.Split(new char[] { ' ' }, 2);
+
+                    var FirstNameText = array[0];
+                    var LastNameText = array[1];
+
+                    users = db.Users.Where(x => x.FirstName.StartsWith(FirstNameText) & x.LastName.StartsWith(LastNameText)).ToList();// söker efter förnamn och efternam man sökt på i DB för att visas i viewn 
+                }
+                else
+                {
+                    users = db.Users.Where(x => x.FirstName.StartsWith(SearchText)).ToList();// söker efter förnamn man sökt på i DB för att visas i viewn 
+                }
+            }
+
+
+            foreach (var user in users)
+            {
+                var userASP = userManager.FindByEmail(user.UserName);
+
+                usersView.Add(new UserIndexView
+                {
+                    Adress = user.Adress,
+                    Candidates = user.Candidates,
+                    FirstName = user.FirstName,
+                    //GroupMember = user.GroupMember,
+                    IsAdmin = userASP != null && userManager.IsInRole(userASP.Id, "Admin"),
+                    LastName = user.LastName,
+                    Phone = user.Phone,
+                    Photo = user.Photo,
+                    UserId = user.UserId,
+                    UserName = user.UserName,
+                });
+
+            }
+
+            //test------------------------------------------------
+
+            //List<int> RemoveID = new List<int>();
+            /*
+                        for (var i = 0; i < UsersList.Count; i++)
+                        {
+
+                            var userContext = new ApplicationDbContext();
+                            var userManager = new UserManager<ApplicationUser>(new UserStore<ApplicationUser>(userContext));
+                            var userASP = userManager.FindByEmail(UsersList[i].UserName);
+
+
+                            if (userManager.IsInRole(userASP.Id, "Admin"))
+                            {
+                                //RemoveID.Add(i);
+                                ViewBag.Admin = 1;
+                            }
+                            else
+                            {
+                                ViewBag.Admin = 0;
+                            }
+
+                        }*/
+
+            /*for (int i = RemoveID.Count - 1; i >= 0; i--)
+            {
+                UsersList.RemoveAt(RemoveID[i]);
+            }*/
+
+            //-------------------------------------------------------
+
+
+
+            return PartialView("_UserInfo", usersView);
+            //return RedirectToAction(string.Format("Details/{0}", ViewBag.VotingId));
+
+        }
+
+
+        public JsonResult GetNameSearch(String term)// funktion som används av autocomplete jquery
+        {
+            List<String> UsersList;// skapar lista som kommer användas för att spara alla User från DB
+
+
+            if (term.Contains(" "))
+            {
+                string[] array = term.Split(new char[] { ' ' }, 2);
+
+                var FirstNameText = array[0];
+                var LastNameText = array[1];
+
+                UsersList = db.Users.Where(x => x.FirstName.StartsWith(FirstNameText) & x.LastName.StartsWith(LastNameText)).Select(y => y.FirstName + " " + y.LastName).ToList();// söker efter förnamn och efternam man sökt på i DB för att visas på autocomplete 
+
+            }
+            else
+            {
+                UsersList = db.Users.Where(x => x.FirstName.StartsWith(term)).Select(y => y.FirstName + " " + y.LastName).ToList();// söker efter förnamnet man sökt på i DB för att visas på autocomplete
+            }
+
+
+            return Json(UsersList, JsonRequestBehavior.AllowGet);
+        }
+
+
+
+        //-----------------------------------------------------------------------------------------
+
+
         [Authorize(Roles = "Admin")]
         public ActionResult Details(int? id)// hämtar specifik användares info
         {

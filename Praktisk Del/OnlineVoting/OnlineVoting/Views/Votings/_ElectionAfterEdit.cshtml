@@ -1,56 +1,15 @@
 ﻿@model IEnumerable<OnlineVoting.Models.VotingIndexView>
 
 @{
-    ViewBag.Title = "_ElectionInfo";
+    ViewBag.Title = "_ElectionAfterEdit";
 
 }
     <section id="Elections">
 
-        <div class="container-fluid">
-
-            <div class="row">
-
-                <div class="col-md-1">
-                    @Html.DisplayNameFor(model => model.State.Descripcion)
-                </div>
-                <div class="col-md-2">
-                    @Html.DisplayNameFor(model => model.Description)
-                </div>
-                <div class="col-md-2">
-                    @Html.DisplayNameFor(model => model.Remarks)
-                </div>
-                <div class="col-md-1">
-                    @Html.DisplayNameFor(model => model.DateTimeStart)
-                </div>
-                <div class="col-md-1">
-                    @Html.DisplayNameFor(model => model.DateTimeEnd)
-                </div>
-
-                @*<th>
-                    @Html.DisplayNameFor(model => model.IsForAllUsers)
-                </th>*@
-
-                <div class="col-md-1">
-                    @Html.DisplayNameFor(model => model.IsEnableBlankVote)
-                </div>
-
-                <div class="col-md-1">
-                    @Html.DisplayNameFor(model => model.QuantityVotes)
-                </div>
-
-                <div class="col-md-1">
-                    @Html.DisplayNameFor(model => model.QuantityBlankVotes)
-                </div>
-
-                <div class="col-md-1">
-                    Winner
-                </div>
-
-
-            </div>
             @foreach (var item in Model)
             {
-                <div class="row" id="M-@item.VotingId">
+                
+                    @Html.HiddenFor(model => item.VotingId)
                     @*<td>
                     @Html.HiddenFor(modelItem => item.VotingId)
                     </td>*@
@@ -95,19 +54,17 @@
                    }, new { @class = "btn btn-info" })
 
 
-                        @Html.ActionLink("Add Candidate", "Details", new { id = item.VotingId }, new { @class = "btn btn-info"})
-                        @Html.ActionLink("Results", "ShowResults", new { id = item.VotingId }, new { @class = "btn btn-info"})
+                        @Html.ActionLink("Add Candidate", "Details", new { id = item.VotingId }, new { @class = "btn btn-info" })
+                        @Html.ActionLink("Results", "ShowResults", new { id = item.VotingId }, new { @class = "btn btn-info" })
 
                         @Html.ActionLink("Close", "Close", new { id = item.VotingId }, new { @class = "btn btn-default", onclick = "return confirm('Are you sure to close this votation?')" })
                         @Html.ActionLink("Delete", "Delete", new { id = item.VotingId }, new { @class = "btn btn-default"})
                     </div>
 
 
-
-                </div>
             }
 
-        </div>
+    
 
 
 
