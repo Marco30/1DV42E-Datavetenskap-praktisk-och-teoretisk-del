@@ -15,7 +15,7 @@
         <h2>Elections</h2>
 
         <p>
-            @Html.ActionLink("Create New", "Create", new { }, new { @class = "btn btn-primary" })
+            @Html.ActionLink("Create New", "Create", new { }, new { @class = "btn btn-info" })
         </p>
 
         <p>
@@ -41,7 +41,7 @@
         {
 
             @Html.TextBox("SearchText", null, new { id = "SearchText" })
-            <input type="submit" value="Search" class="btn btn-primary" />
+            <input type="submit" value="Search" class="btn btn-info" />
 
         }
     </div>
@@ -218,8 +218,8 @@
                         @Html.ActionLink("Add Candidate", "Details", new { id = item.VotingId }, new { @class = "btn btn-info"}) 
                         @Html.ActionLink("Results", "ShowResults", new { id = item.VotingId }, new { @class = "btn btn-info"})
    
-                        @Html.ActionLink("Close", "Close", new { id = item.VotingId }, new { @class = "btn btn-default", onclick = "return confirm('Are you sure to close this votation?')" })
-                        @Html.ActionLink("Delete", "Delete", new { id = item.VotingId }, new { @class = "btn btn-default"})
+                        @Html.ActionLink("Close", "Close", new { id = item.VotingId }, new { @class = "btn btn-info", onclick = "return confirm('Are you sure to close this votation?')" })
+                        @Html.ActionLink("Delete", "Delete", new { id = item.VotingId }, new { @class = "btn btn-info" })
                     </div>
                 </div>
             }

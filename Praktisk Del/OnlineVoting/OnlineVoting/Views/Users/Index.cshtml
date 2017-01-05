@@ -81,10 +81,10 @@
                     @Html.DisplayFor(modelItem => item.IsAdmin)
                 </td>
                 <td>
-                    @Html.ActionLink("Edit", "Edit", new { id = item.UserId }) |
-                    @Html.ActionLink("Details", "Details", new { id = item.UserId }) |
-                    @Html.ActionLink("On/Off Admin", "OnOffAdmin", new { id = item.UserId }) |
-                    @Html.ActionLink("Delete", "Delete", new { id = item.UserId })
+                    @Html.ActionLink("Edit", "Edit", new { id = item.UserId }, new { @class = "btn btn-info" }) |
+                    @Html.ActionLink("Details", "Details", new { id = item.UserId }, new { @class = "btn btn-info" }) |
+                    @Html.ActionLink("On/Off Admin", "OnOffAdmin", new { id = item.UserId }, new { @class = "btn btn-info" }) |
+                    @Html.ActionLink("Delete", "Delete", new { id = item.UserId }, new { @class = "btn btn-info" })
                 </td>
             </tr>
         }
