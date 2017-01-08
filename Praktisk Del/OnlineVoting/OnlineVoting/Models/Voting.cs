@@ -15,7 +15,7 @@ namespace OnlineVoting.Models
 
         [Required(ErrorMessage = "The field {0} is required")]
         [StringLength(100, MinimumLength = 6, ErrorMessage = "The field {0} can contain maximum {1} and minimum {2} characters")]
-        [Display(Name = "Voting Description")]
+        [Display(Name = "Election")]
         public string Description { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
@@ -23,16 +23,17 @@ namespace OnlineVoting.Models
         public int StateId { get; set; }
 
         [DataType(DataType.MultilineText)]
+        [Display(Name = "Description")]
         public string Remarks { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
-        [Display(Name = "Date time start")]
+        [Display(Name = "DateTime Start")]
         [DataType(DataType.DateTime)]
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd HH:mm tt}", ApplyFormatInEditMode = true)]
         public DateTime DateTimeStart { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
-        [Display(Name = "Date time end")]
+        [Display(Name = "DateTime End")]
         [DataType(DataType.DateTime)]
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd HH:mm tt}", ApplyFormatInEditMode = true)]
         public DateTime DateTimeEnd { get; set; }
@@ -42,13 +43,13 @@ namespace OnlineVoting.Models
         public bool IsForAllUsers { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
-        [Display(Name = "Enabled blank vote?")]
+        [Display(Name = "Enabled blank vote")]
         public bool IsEnableBlankVote { get; set; }
 
-        [Display(Name = "Quantity votes")]
+        [Display(Name = "Total votes")]
         public int QuantityVotes { get; set; }
 
-        [Display(Name = "Quantity blank votes")]
+        [Display(Name = "Blank votes")]
         public int QuantityBlankVotes { get; set; }
 
         [Display(Name = "Winner")]

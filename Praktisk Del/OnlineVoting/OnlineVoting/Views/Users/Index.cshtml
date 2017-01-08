@@ -14,21 +14,21 @@
 {
 
     @Html.TextBox("SearchText", null, new { id = "SearchText" })
-    <input type="submit" value="Search" class="btn btn-primary" />
+    <input type="submit" value="Search" class="btn btn-info" />
 
 }
 
 <p>
-    @Html.ActionLink("Create New", "Create", new { }, new { @class = "btn btn-primary" })
+    @Html.ActionLink("Create New", "Create", new { }, new { @class = "btn btn-info" })
 
-    @Html.ActionLink("XML", "XML", new { }, new { @class = "btn btn-default" })
+    @Html.ActionLink("Create XML", "XML", new { }, new { @class = "btn btn-default" })
 
 </p>
 
 <div id="resultTarget">
 
-    <table class="table">
-        <tr>
+    <table class="table" id="Userlist">
+        <tr id ="hide">
             <th>
                 @Html.DisplayNameFor(model => model.UserName)
             </th>
@@ -81,10 +81,10 @@
                     @Html.DisplayFor(modelItem => item.IsAdmin)
                 </td>
                 <td>
-                    @Html.ActionLink("Edit", "Edit", new { id = item.UserId }, new { @class = "btn btn-info" }) |
-                    @Html.ActionLink("Details", "Details", new { id = item.UserId }, new { @class = "btn btn-info" }) |
-                    @Html.ActionLink("On/Off Admin", "OnOffAdmin", new { id = item.UserId }, new { @class = "btn btn-info" }) |
-                    @Html.ActionLink("Delete", "Delete", new { id = item.UserId }, new { @class = "btn btn-info" })
+                    @Html.ActionLink("Edit", "Edit", new { id = item.UserId }, new { @class = "btn btn-info" }) 
+                    @Html.ActionLink("Details", "Details", new { id = item.UserId }, new { @class = "btn btn-info" }) 
+                    @Html.ActionLink("On/Off Admin", "OnOffAdmin", new { id = item.UserId }, new { @class = "btn btn-default" }) 
+                    @Html.ActionLink("Delete", "Delete", new { id = item.UserId }, new { @class = "btn btn-default" })
                 </td>
             </tr>
         }

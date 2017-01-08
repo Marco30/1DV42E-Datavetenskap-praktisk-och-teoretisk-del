@@ -9,13 +9,13 @@
 @if (User.IsInRole("Admin"))
 {
     <p>
-        @Html.ActionLink("Back To All Results", "Index", "Votings")
+        @Html.ActionLink("Back To All Results", "Index", "Votings", new { @class = "btn btn-default" })
     </p>
 }
 else
 {
     <p>
-        @Html.ActionLink("Back To All Results", "Results", "Votings")
+        @Html.ActionLink("Back To All Results", "Results", "Votings", new { @class = "btn btn-default" })
     </p>
 }
 
@@ -33,8 +33,8 @@ else
     Number of votes : @ViewBag.NumberOfVotes
     </p>
 
-    <table class="table">
-        <tr>
+    <table class="table" id="ShowResults">
+        <tr id ="hide">
 
 
             <th>

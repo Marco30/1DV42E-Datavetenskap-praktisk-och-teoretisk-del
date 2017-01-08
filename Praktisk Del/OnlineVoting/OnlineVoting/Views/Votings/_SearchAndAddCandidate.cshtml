@@ -27,7 +27,7 @@
 {
 
     @Html.TextBox("SearchText", null, new { id = "SearchText" })
-    <input type="submit" value="Search" class="btn btn-primary" />
+    <input type="submit" value="Search" class="btn btn-info" />
 
 }
 
@@ -37,8 +37,8 @@
         @ViewBag.Message
     </p>
 
-    <table class="table">
-        <tr>
+    <table class="table" id="AddCandidates">
+        <tr id="hide">
             <th>
                 @Html.DisplayNameFor(model => model.UserName)
             </th>
@@ -98,7 +98,7 @@
                         @Ajax.ActionLink("Add To Election", "MakeUserToCandidate", new { UserID = item.UserId, VotingID = ViewBag.VotingId, UserFullName = item.FullName }, new AjaxOptions {
                        HttpMethod = "POST",
                        OnSuccess = "onSuccess",
-                   }, new { @class = "btn btn-default" }) | @* new { @class = "btn btn-default", target = "_blank" *@
+                   }, new { @class = "btn btn-default" })  @* new { @class = "btn btn-default", target = "_blank" *@
 
                         @* @using (@Html.BeginForm("MakeUserToCandidate", "VotingsController", FormMethod.Post, new { UserID = item.UserId, VotingID = ViewBag.VotingId }))
                             {

@@ -2,12 +2,10 @@
 @{
     ViewBag.Title = "MyVotings";
 }
-<h2>My Pending Votings</h2>
-<p>
-    @Html.ActionLink("Create New", "Create")
-</p>
-<table class="table">
-    <tr>
+<h2>Pending Elections</h2>
+
+<table class="table" id ="UserElections">
+    <tr id ="hide">
         <th>
             @Html.DisplayNameFor(model => model.State.Descripcion)
         </th>
@@ -62,7 +60,7 @@
             </td>
 
             <td>
-                @Html.ActionLink("Vote", "Vote", new { votingId = item.VotingId }, new { @class = "btn btn-primary" })
+                @Html.ActionLink("Vote", "Vote", new { votingId = item.VotingId }, new { @class = "btn btn-info" })
 
             </td>
         </tr>

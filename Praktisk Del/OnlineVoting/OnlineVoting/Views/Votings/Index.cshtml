@@ -52,7 +52,83 @@
 
     @*-------------------------test--------------------------------------*@
 
-    <div class="col-md-8">
+    <div class="col-md-4">
+        <div class="tile-newAdmin">
+
+            <span class="a-btn-text">Order Election</span>
+            <span class="a-btn-slide-text">Order by status of election or by yea</span>
+            <span class="a-btn-icon-right"><span></span></span>
+
+            @*<div class="tile-hover" style="background-color:rgba(37, 45, 207, 0.9);">*@
+            <div class="tile-hoverAdmin">
+
+
+
+                <div class="col-md-6">
+
+
+                    @using (Ajax.BeginForm("IndexOrderBy", "Votings", null, new AjaxOptions
+            {
+                InsertionMode = InsertionMode.Replace,
+                HttpMethod = "POST",
+                UpdateTargetId = "ResultTarget"
+            })) //skickar Id till post funktionen i controller
+            {
+                        <table class="table" id="TabelOrderVote">
+ 
+
+                            <tr id="hide">
+                                <th>
+                                    State
+                                </th>
+                                <th>
+                                    Year
+                                </th>
+                                <th>
+                                    Month
+                                </th>
+                            </tr>
+                            <tr>
+                                <td>
+
+
+                                    @Html.DropDownList("StateId", "Select")
+
+                                </td>
+                                <td>
+
+                                    @Html.DropDownList("SelectedYear", "Select")
+
+                                </td>
+                                <td>
+                                    <div id="MonthBox">
+
+                                        @Html.DropDownList("SelectedMonths", "Select")
+
+                                    </div>
+                                </td>
+
+                            <tr>
+                        </table>
+
+                        <input type="submit" value="Order By" class="btn btn-default" />
+                        <hr />
+                    }
+
+
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+    @*---------------------------------------------------------------*@
+
+    @*<div class="col-md-8">
         <hr />
 
         <div class="col-md-6">
@@ -65,14 +141,14 @@
                 UpdateTargetId = "ResultTarget"
             })) //skickar Id till post funktionen i controller
             {
-                <table class="table" id="TabelOrder">
+                <table class="table" id="TabelOrderVote">
                     <tr>
                         <th colspan="5" scope="colgroup">
-                            Order by status of election or by year
+                            Order by status of election or by yea
                         </th>
                     </tr>
 
-                    <tr>
+                    <tr id="hide">
                         <th>
                             State
                         </th>
@@ -106,18 +182,15 @@
                     <tr>
                 </table>
 
-                <input type="submit" value="Order By" class="btn btn-primary" />
+                <input type="submit" value="Order By" class="btn btn-info" />
                 <hr />
             }
 
-
         </div>
 
+    </div>*@
 
-
-    </div>
-
-    @*---------------------------------------------------------------*@
+   
 
 </div>
 
@@ -128,46 +201,7 @@
 
         <div class="container-fluid">
 
-            <div class="row">
 
-                <div class="col-md-1">
-                    @Html.DisplayNameFor(model => model.State.Descripcion)
-                </div>
-                <div class="col-md-2">
-                    @Html.DisplayNameFor(model => model.Description)
-                </div>
-                <div class="col-md-2">
-                    @Html.DisplayNameFor(model => model.Remarks)
-                </div>
-                <div class="col-md-1">
-                    @Html.DisplayNameFor(model => model.DateTimeStart)
-                </div>
-                <div class="col-md-1">
-                    @Html.DisplayNameFor(model => model.DateTimeEnd)
-                </div>
-
-                @*<th>
-                        @Html.DisplayNameFor(model => model.IsForAllUsers)
-                    </th>*@
-
-                <div class="col-md-1">
-                    @Html.DisplayNameFor(model => model.IsEnableBlankVote)
-                </div>
-
-                <div class="col-md-1">
-                    @Html.DisplayNameFor(model => model.QuantityVotes)
-                </div>
-
-                <div class="col-md-1">
-                    @Html.DisplayNameFor(model => model.QuantityBlankVotes)
-                </div>
-
-                <div class="col-md-1">
-                    Winner
-                </div>
-
-
-            </div>
             @foreach (var item in Model)
             {
                 <div class="row" id="M-@item.VotingId">
@@ -175,19 +209,48 @@
                         @Html.HiddenFor(modelItem => item.VotingId)
                         </td>*@
                     <div class="col-md-1">
-                        @Html.DisplayFor(modelItem => item.State.Descripcion)
+
+                        <b>@Html.DisplayNameFor(model => model.State.Descripcion):</b>
+                        <br>
+                        <div id="text1">
+                            @Html.DisplayFor(modelItem => item.State.Descripcion)
+                        </div>
                     </div>
+
                     <div class="col-md-2">
-                        @Html.DisplayFor(modelItem => item.Description)
+
+                        <b>@Html.DisplayNameFor(model => model.Description):</b>
+                        <br>
+                        <div id="text1">
+                            @Html.DisplayFor(modelItem => item.Description)
+                        </div>
                     </div>
+
                     <div class="col-md-2">
-                        @Html.DisplayFor(modelItem => item.Remarks)
+
+                        <b> @Html.DisplayNameFor(model => model.Remarks)</b>
+                        <br>
+                        <div id="text1">
+                            @Html.DisplayFor(modelItem => item.Remarks)
+                        </div>
                     </div>
                     <div class="col-md-1">
-                        @Html.DisplayFor(modelItem => item.DateTimeStart)
+
+                        <b> @Html.DisplayNameFor(model => model.DateTimeStart)</b>
+                        <br>
+                        <div id="text2">
+                            @Html.DisplayFor(modelItem => item.DateTimeStart)
+                        </div>
+
                     </div>
+
                     <div class="col-md-1">
-                        @Html.DisplayFor(modelItem => item.DateTimeEnd)
+
+                        <b> @Html.DisplayNameFor(model => model.DateTimeEnd)</b>
+                        <br>
+                        <div id="text2">
+                            @Html.DisplayFor(modelItem => item.DateTimeEnd)
+                        </div>
                     </div>
 
                     @* <td>
@@ -195,31 +258,50 @@
                         </td> *@
 
                     <div class="col-md-1">
-                        @Html.DisplayFor(modelItem => item.IsEnableBlankVote)
+                        <b>@Html.DisplayNameFor(model => model.IsEnableBlankVote)</b>
+                        <br>
+
+                        <div id="text3">
+                            @Html.DisplayFor(modelItem => item.IsEnableBlankVote)
+                        </div>
+
                     </div>
                     <div class="col-md-1">
-                        @Html.DisplayFor(modelItem => item.QuantityVotes)
+                        <b>@Html.DisplayNameFor(model => model.QuantityVotes)</b>
+                        <br>
+                        <div id="text2">
+                            @Html.DisplayFor(modelItem => item.QuantityVotes)
+                        </div>
+                    </div>
+
+                    <div class="col-md-1">
+                        <b>@Html.DisplayNameFor(model => model.QuantityBlankVotes)</b>
+                        <br>
+                        <div id="text2">
+                            @Html.DisplayFor(modelItem => item.QuantityBlankVotes)
+                        </div>
                     </div>
                     <div class="col-md-1">
-                        @Html.DisplayFor(modelItem => item.QuantityBlankVotes)
-                    </div>
-                    <div class="col-md-1">
-                        @Html.DisplayFor(modelItem => item.Winner.FullName)
+                        <b>Winner</b>
+                        <br>
+                        <div id="text1">
+                            @Html.DisplayFor(modelItem => item.Winner.FullName)
+                        </div>
                     </div>
                     <div class="col-md-1">
                         @Ajax.ActionLink("Edit On", "_EditElectionInfoOnline", new { id = item.VotingId }, new AjaxOptions
-                              {
-                                  HttpMethod = "POST",
-                                  InsertionMode = InsertionMode.Replace,
-                                  OnSuccess = "onSuccess",
-                              }, new { @class = "btn btn-info" })
+                   {
+                       HttpMethod = "POST",
+                       InsertionMode = InsertionMode.Replace,
+                       OnSuccess = "onSuccess",
+                   }, new { @class = "btn btn-info" })
 
 
-                        @Html.ActionLink("Add Candidate", "Details", new { id = item.VotingId }, new { @class = "btn btn-info"}) 
-                        @Html.ActionLink("Results", "ShowResults", new { id = item.VotingId }, new { @class = "btn btn-info"})
-   
-                        @Html.ActionLink("Close", "Close", new { id = item.VotingId }, new { @class = "btn btn-info", onclick = "return confirm('Are you sure to close this votation?')" })
-                        @Html.ActionLink("Delete", "Delete", new { id = item.VotingId }, new { @class = "btn btn-info" })
+                        @Html.ActionLink("Add Candidate", "Details", new { id = item.VotingId }, new { @class = "btn btn-info" })
+                        @Html.ActionLink("Results", "ShowResults", new { id = item.VotingId }, new { @class = "btn btn-info" })
+
+                        @Html.ActionLink("Close", "Close", new { id = item.VotingId }, new { @class = "btn btn-default", onclick = "return confirm('Are you sure to close this votation?')" })
+                        @Html.ActionLink("Delete", "Delete", new { id = item.VotingId }, new { @class = "btn btn-default" })
                     </div>
                 </div>
             }
@@ -277,13 +359,13 @@
             else {
 
                 var fileId = $(result).find('#VotingId').val();
-                $('#M-' + fileId.toString()).html(result);// läger in partail view 
-                $.validator.unobtrusive.parse($('#M-' + fileId.toString()));// läger till validering meddelande 
+                $('#M-' + fileId.toString()).html(result);// läger in partail view
+                $.validator.unobtrusive.parse($('#M-' + fileId.toString()));// läger till validering meddelande
                 //$('#M-' + fileId.toString()).css({ "width": "auto" });
                 //$('#M-' + fileId.toString() + ' td').css({ 	"border": "1px solid #CC3","border-spacing": "0","height": "100px", "width": "100px", "margin": "0", "padding": "0"});
                 $('#M-' + fileId.toString() + ' .form-group1').css({ "margin": "1px -48px 0px 0px", "padding-left": "9px" });
 
-   
+
 
                 $("#DateStart").prop('id', 'DateStart' + fileId.toString());
 
@@ -332,7 +414,7 @@
         $(function () {
 
 
-            var sec = 7;// används för att dölja meddelanden 
+            var sec = 7;// används för att dölja meddelanden
             setTimeout(function () {
                 $("#Error").hide();
             }, sec * 1000);
