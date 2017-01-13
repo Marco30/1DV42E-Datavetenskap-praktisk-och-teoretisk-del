@@ -4,9 +4,9 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewBag.Title - My ASP.NET Application</title>
+    <title>@ViewBag.Title - OnlineVoting</title>
     @Styles.Render("~/Content/css")
-        @Scripts.Render("~/bundles/modernizr")
+    @Scripts.Render("~/bundles/modernizr")
     <link href="~/Content/FormStyle.css" rel="stylesheet" />
 </head>
 <body>
@@ -23,7 +23,7 @@
             <div class="navbar-collapse collapse">
                 <ul class="nav navbar-nav">
                     <li>@Html.ActionLink("Home", "Index", "Home")</li>
-                    <li>@Html.ActionLink("About", "About", "Home")</li>
+                    @*<li>@Html.ActionLink("About", "About", "Home")</li>*@
                     <li>@Html.ActionLink("Contact", "Contact", "Home")</li>
 
                     @if (this.User.IsInRole("Admin"))
@@ -31,18 +31,18 @@
                         <li class="dropdown">
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Admin Options<b class="caret"></b></a>
                             <ul class="dropdown-menu">
+                        <li>@Html.ActionLink("Users", "Index", "Users")</li>
+                        <li>@Html.ActionLink("Elections", "Index", "Votings")</li>
                                 <li>@Html.ActionLink("States", "Index", "States")</li>
-                                <li>@Html.ActionLink("Elections", "Index", "Votings")</li>
-                                <li>@Html.ActionLink("Users", "Index", "Users")</li>
-                            </ul>
-                        </li>
+                                </ul>
+                                    </li>
                     }
                     @*validation User*@
                     @if (this.User.IsInRole("User"))
                     {  <!--Menu    "name"  "name action"   "name controller" -->
                         <li>@Html.ActionLink("My Settings", "MySettings", "Users")</li>
-                                    <li>@Html.ActionLink("Elections", "MyVotings", "Votings")</li>
-                                    <li>@Html.ActionLink("Results", "Results", "Votings")</li>
+                        <li>@Html.ActionLink("Elections", "MyVotings", "Votings")</li>
+                        <li>@Html.ActionLink("Results", "Results", "Votings")</li>
                     }
                 </ul>
                 @Html.Partial("_LoginPartial")
@@ -50,18 +50,20 @@
         </div>
     </div>
     <div class="container body-content">
+
         @RenderBody()
         <hr />
         <footer>
-            <p>&copy; @DateTime.Now.Year - My ASP.NET Application</p>
+            <p>&copy; @DateTime.Now.Year - OlineVoting</p>
         </footer>
+
     </div>
-        @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/bootstrap")
     @Scripts.Render("~/Scripts/jquery.unobtrusive-ajax.min.js")
     @Scripts.Render("~/Scripts/jquery.validate.min.js")
     @Scripts.Render("~/Scripts/jquery.timepicker.min.js") <!--script som har Timepicker jquery funktionen som gör att man kan välja tid i en lista -->
-    @Scripts.Render("/Scripts/jquery-ui.min.js")<!--script som har Datepicker jquery funktionen som gör att man kan välja datum ur en kalender-->
+    @Scripts.Render("~/Scripts/jquery-ui.min.js")<!--script som har Datepicker jquery funktionen som gör att man kan välja datum ur en kalender-->
 
     @Scripts.Render("~/Scripts/Focus,TimeAndDate.js")<!--Egen liten script som aktiverar (Date,Tame) jquery funktionerna som finns i dem andra filerna och har också en focus funktion som fokuserar på en specifik textruta -->
 

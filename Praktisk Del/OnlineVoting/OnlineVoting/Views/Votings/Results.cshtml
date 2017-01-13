@@ -178,7 +178,10 @@
 
 </div>
 
-
+@if (ViewBag.empty)
+{
+    <div id="Error2">There are no Results</div>
+}
 
 <div id="ResultTarget">
 
@@ -259,7 +262,7 @@
                 "Results",
                 "ShowResults",
                 new { id = item.VotingId },
-                new { @class = "btn btn-info", target = "_blank" })
+                new { @class = "btn btn-info"})
                 </td>
             </tr>
         }

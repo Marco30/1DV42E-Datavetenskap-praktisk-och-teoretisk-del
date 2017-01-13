@@ -5,7 +5,7 @@
 }
 
 <table class="table">
-    <tr>
+    <tr id="hide">
         <th>
             @Html.DisplayNameFor(model => model.State.Descripcion)
         </th>
@@ -80,7 +80,7 @@
                 "Results",
                 "ShowResults",
                 new { id = item.VotingId },
-                new { @class = "btn btn-primary", target = "_blank" }) |
+                new { @class = "btn btn-info" }) |
             </td>
         </tr>
     }

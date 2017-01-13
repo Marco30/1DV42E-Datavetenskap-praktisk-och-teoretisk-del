@@ -10,25 +10,24 @@ using Microsoft.AspNet.Identity.EntityFramework;
 using Microsoft.Owin.Security;
 using OnlineVoting.Models;
 using System.IO;
+using OnlineVoting.Models.Repository;
 
 namespace OnlineVoting.Controllers
 {
     [Authorize]
     public class AccountController : Controller
     {
+        private IUserRepository _userRepository;
+        private IAccountRepository _accountRepository;
+
         public AccountController()
-            : this(new UserManager<ApplicationUser>(new UserStore<ApplicationUser>(new ApplicationDbContext())))
         {
+            _accountRepository = new AccountRepository();
+            _userRepository = new UserRepository();
+
         }
 
-        public AccountController(UserManager<ApplicationUser> userManager)
-        {
-            UserManager = userManager;
-        }
 
-        public UserManager<ApplicationUser> UserManager { get; private set; }
-
-        //
         // GET: /Account/Login
         [AllowAnonymous]
         public ActionResult Login(string returnUrl)
@@ -42,20 +41,26 @@ namespace OnlineVoting.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        // public async Task<ActionResult> Login(LoginViewModel model, string returnUrl)
         public async Task<ActionResult> Login(LoginViewModel model, string returnUrl)
         {
             if (ModelState.IsValid)
             {
-                var user = await UserManager.FindAsync(model.UserName, model.Password);
-                if (user != null)
-                {
-                    await SignInAsync(user, model.RememberMe);
-                    return RedirectToLocal(returnUrl);
-                }
-                else
-                {
-                    ModelState.AddModelError("", "Invalid username or password.");
-                }
+
+                var user = await _accountRepository.GetUserByEmailAndPassword(model.UserName, model.Password);// hämtar användar från Db genom metod i AccountRepository
+
+      
+                    if (user != null)
+                    {
+                        await SignInAsync(user, model.RememberMe);
+                        return RedirectToLocal(returnUrl);
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("", "Invalid username or password.");
+                    }
+        
+
             }
 
             // If we got this far, something failed, redisplay form
@@ -110,13 +115,18 @@ namespace OnlineVoting.Controllers
 
                 };
 
-                var db = new OnlineVotingContext();
-                db.Users.Add(user);
+
+                _userRepository.Add(user);// läger till anändar i DB
+
                 // try catch for validation of error    
                 try
                 {
-                    db.SaveChanges();
-                    var userASP = this.CreateASPUser(userView);
+
+                    _userRepository.Save();
+
+                    var userASP = _accountRepository.CreatesUserInASPdb(userView);// skpar användar i Asp.net DB
+
+
                     // auto login   -   isPersistent=remember in the sesion
                     await SignInAsync(userASP, isPersistent: false);
                     return RedirectToAction("Index", "Home");
@@ -144,38 +154,7 @@ namespace OnlineVoting.Controllers
             return View(userView);
         }
 
-        private ApplicationUser CreateASPUser(RegisterUserView userView)
-        {
-            // User management
-            var userContext = new ApplicationDbContext();
-            var userManager = new UserManager<ApplicationUser>(new UserStore<ApplicationUser>(userContext));
-            var roleManager = new RoleManager<IdentityRole>(new RoleStore<IdentityRole>(userContext));
 
-            // Create User role
-            string roleName = "User";// ändra texten User till Admin för att skapa en Admin användare 
-
-            // Check to see if Role Exists, if not create it
-            if (!roleManager.RoleExists(roleName))
-            {
-                roleManager.Create(new IdentityRole(roleName));
-            }
-
-            // Create the ASP NET User
-            var userASP = new ApplicationUser
-            {
-                UserName = userView.UserName,
-                Email = userView.UserName,
-                PhoneNumber = userView.Phone,
-            };
-
-            userManager.Create(userASP, userView.Password);
-
-            // Add user to role
-            userASP = userManager.FindByName(userView.UserName);
-            userManager.AddToRole(userASP.Id, "User");// ändra texten User till Admin för att skapa en Admin användare 
-            return userASP;
-
-        }
 
         //
         // POST: /Account/Disassociate
@@ -184,7 +163,10 @@ namespace OnlineVoting.Controllers
         public async Task<ActionResult> Disassociate(string loginProvider, string providerKey)
         {
             ManageMessageId? message = null;
-            IdentityResult result = await UserManager.RemoveLoginAsync(User.Identity.GetUserId(), new UserLoginInfo(loginProvider, providerKey));
+
+            IdentityResult result = await _accountRepository.RemoveLoginInASPdb(User.Identity.GetUserId(), loginProvider, providerKey);
+
+
             if (result.Succeeded)
             {
                 message = ManageMessageId.RemoveLoginSuccess;
@@ -220,11 +202,12 @@ namespace OnlineVoting.Controllers
             bool hasPassword = HasPassword();
             ViewBag.HasLocalPassword = hasPassword;
             ViewBag.ReturnUrl = Url.Action("Manage");
+
             if (hasPassword)
             {
                 if (ModelState.IsValid)
                 {
-                    IdentityResult result = await UserManager.ChangePasswordAsync(User.Identity.GetUserId(), model.OldPassword, model.NewPassword);
+                    IdentityResult result = await _accountRepository.ChangePasswordForUserInASPdb(User.Identity.GetUserId(), model.OldPassword, model.NewPassword);// ändrar lösen i asp.net DB 
                     if (result.Succeeded)
                     {
                         return RedirectToAction("Manage", new { Message = ManageMessageId.ChangePasswordSuccess });
@@ -246,7 +229,7 @@ namespace OnlineVoting.Controllers
 
                 if (ModelState.IsValid)
                 {
-                    IdentityResult result = await UserManager.AddPasswordAsync(User.Identity.GetUserId(), model.NewPassword);
+                    IdentityResult result = await _accountRepository.AddPasswordForUserToASPdb(User.Identity.GetUserId(), model.NewPassword);// Läger till ny password til en användare i DB 
                     if (result.Succeeded)
                     {
                         return RedirectToAction("Manage", new { Message = ManageMessageId.SetPasswordSuccess });
@@ -262,110 +245,7 @@ namespace OnlineVoting.Controllers
             return View(model);
         }
 
-        //
-        // POST: /Account/ExternalLogin
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public ActionResult ExternalLogin(string provider, string returnUrl)
-        {
-            // Request a redirect to the external login provider
-            return new ChallengeResult(provider, Url.Action("ExternalLoginCallback", "Account", new { ReturnUrl = returnUrl }));
-        }
 
-        //
-        // GET: /Account/ExternalLoginCallback
-        [AllowAnonymous]
-        public async Task<ActionResult> ExternalLoginCallback(string returnUrl)
-        {
-            var loginInfo = await AuthenticationManager.GetExternalLoginInfoAsync();
-            if (loginInfo == null)
-            {
-                return RedirectToAction("Login");
-            }
-
-            // Sign in the user with this external login provider if the user already has a login
-            var user = await UserManager.FindAsync(loginInfo.Login);
-            if (user != null)
-            {
-                await SignInAsync(user, isPersistent: false);
-                return RedirectToLocal(returnUrl);
-            }
-            else
-            {
-                // If the user does not have an account, then prompt the user to create an account
-                ViewBag.ReturnUrl = returnUrl;
-                ViewBag.LoginProvider = loginInfo.Login.LoginProvider;
-                return View("ExternalLoginConfirmation", new ExternalLoginConfirmationViewModel { UserName = loginInfo.DefaultUserName });
-            }
-        }
-
-        //
-        // POST: /Account/LinkLogin
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult LinkLogin(string provider)
-        {
-            // Request a redirect to the external login provider to link a login for the current user
-            return new ChallengeResult(provider, Url.Action("LinkLoginCallback", "Account"), User.Identity.GetUserId());
-        }
-
-        //
-        // GET: /Account/LinkLoginCallback
-        public async Task<ActionResult> LinkLoginCallback()
-        {
-            var loginInfo = await AuthenticationManager.GetExternalLoginInfoAsync(XsrfKey, User.Identity.GetUserId());
-            if (loginInfo == null)
-            {
-                return RedirectToAction("Manage", new { Message = ManageMessageId.Error });
-            }
-            var result = await UserManager.AddLoginAsync(User.Identity.GetUserId(), loginInfo.Login);
-            if (result.Succeeded)
-            {
-                return RedirectToAction("Manage");
-            }
-            return RedirectToAction("Manage", new { Message = ManageMessageId.Error });
-        }
-
-        //
-        // POST: /Account/ExternalLoginConfirmation
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public async Task<ActionResult> ExternalLoginConfirmation(ExternalLoginConfirmationViewModel model, string returnUrl)
-        {
-            if (User.Identity.IsAuthenticated)
-            {
-                return RedirectToAction("Manage");
-            }
-
-            if (ModelState.IsValid)
-            {
-                // Get the information about the user from the external login provider
-                var info = await AuthenticationManager.GetExternalLoginInfoAsync();
-                if (info == null)
-                {
-                    return View("ExternalLoginFailure");
-                }
-                var user = new ApplicationUser() { UserName = model.UserName };
-                var result = await UserManager.CreateAsync(user);
-                if (result.Succeeded)
-                {
-                    result = await UserManager.AddLoginAsync(user.Id, info.Login);
-                    if (result.Succeeded)
-                    {
-                        await SignInAsync(user, isPersistent: false);
-                        return RedirectToLocal(returnUrl);
-                    }
-                }
-                AddErrors(result);
-            }
-
-            ViewBag.ReturnUrl = returnUrl;
-            return View(model);
-        }
-
-        //
         // POST: /Account/LogOff
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -375,30 +255,14 @@ namespace OnlineVoting.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        //
-        // GET: /Account/ExternalLoginFailure
-        [AllowAnonymous]
-        public ActionResult ExternalLoginFailure()
-        {
-            return View();
-        }
 
         [ChildActionOnly]
         public ActionResult RemoveAccountList()
         {
-            var linkedAccounts = UserManager.GetLogins(User.Identity.GetUserId());
+            var linkedAccounts = _accountRepository.GetUsersLoginsInfoFromASPdb(User.Identity.GetUserId());
+
             ViewBag.ShowRemoveButton = HasPassword() || linkedAccounts.Count > 1;
             return (ActionResult)PartialView("_RemoveAccountPartial", linkedAccounts);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && UserManager != null)
-            {
-                UserManager.Dispose();
-                UserManager = null;
-            }
-            base.Dispose(disposing);
         }
 
         #region Helpers
@@ -416,7 +280,10 @@ namespace OnlineVoting.Controllers
         private async Task SignInAsync(ApplicationUser user, bool isPersistent)
         {
             AuthenticationManager.SignOut(DefaultAuthenticationTypes.ExternalCookie);
-            var identity = await UserManager.CreateIdentityAsync(user, DefaultAuthenticationTypes.ApplicationCookie);
+
+            var identity = await _accountRepository.ControlIdentityInASPdb(user);
+            //await UserManager.CreateIdentityAsync(user, DefaultAuthenticationTypes.ApplicationCookie);
+
             AuthenticationManager.SignIn(new AuthenticationProperties() { IsPersistent = isPersistent }, identity);
         }
 
@@ -430,7 +297,8 @@ namespace OnlineVoting.Controllers
 
         private bool HasPassword()
         {
-            var user = UserManager.FindById(User.Identity.GetUserId());
+            var user = _accountRepository.GetUserByIdInASPdb(User.Identity.GetUserId());// hittar användar i ASP.net Db ut i från id
+
             if (user != null)
             {
                 return user.PasswordHash != null;

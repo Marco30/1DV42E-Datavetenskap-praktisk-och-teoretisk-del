@@ -10,6 +10,12 @@ namespace OnlineVoting.Controllers
     {
         public ActionResult Index()
         {
+
+            if (TempData["Message"] != null)
+            {
+                ViewBag.Message = TempData["Message"].ToString();// visar medelande som tagit med fron Edit view
+            }
+
             return View();
         }
 

@@ -18,12 +18,7 @@
             @Html.ActionLink("Create New", "Create", new { }, new { @class = "btn btn-info" })
         </p>
 
-        <p>
-            <div id="Error">
-                @ViewBag.Message
-            </div>
-        </p>
-
+   
         @Html.ValidationSummary(true)
 
         <input id="IndexVote" type="hidden" value="1">
@@ -47,6 +42,12 @@
     </div>
 
 </div>
+
+<p>
+    <div id="Error1">
+        @ViewBag.Message
+    </div>
+</p>
 
 <div class="row">
 
@@ -413,11 +414,6 @@
         // autocomplete som används av sök motorn
         $(function () {
 
-
-            var sec = 7;// används för att dölja meddelanden
-            setTimeout(function () {
-                $("#Error").hide();
-            }, sec * 1000);
 
             $("#SearchText").autocomplete({
                 source: '@Url.Action("GetElectionSearch")'

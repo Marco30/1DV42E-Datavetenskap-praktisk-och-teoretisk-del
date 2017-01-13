@@ -14,7 +14,7 @@ using System.Data.SqlClient;
 using System.Configuration;
 using System.Xml.Linq;
 using System.Xml.Serialization;
-
+using OnlineVoting.Models.Repository;
 
 namespace OnlineVoting.Controllers
 {
@@ -22,13 +22,19 @@ namespace OnlineVoting.Controllers
     public class UsersController : Controller
     {
 
-        private OnlineVotingContext db = new OnlineVotingContext();
+        private IUserRepository _userRepository;
 
+        public UsersController()
+        {
+            _userRepository = new UserRepository();
+
+        }
 
         [Authorize(Roles = "Admin")]
         public ActionResult XML()// skapar XML fil 
         {
-            var report = GenerateUserList();
+
+            var report = _userRepository.GetUserListByFirstName();//hämtar från db
 
             var doc = new XDocument();
             var xmlSerializer = new XmlSerializer(report.GetType());
@@ -43,99 +49,20 @@ namespace OnlineVoting.Controllers
 
             el.Save(Server.MapPath("~/Content/XML") + fil);// bör läga till bekreftelse att fil skapatas och filen borde visas i ny flick på webbläsaren 
 
+            TempData["Message"] = "XML file has been created with all the users";
+
             return RedirectToAction("Index", "Users");
         }
-
-
-        private List<User> GenerateUserList()// anbänds till att lad hem alla användare så att man kan skapa en XML fil
-        {
-            var connectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
-     
-            var sql = "SELECT * FROM Users ORDER BY LastName, FirstName";
-
-
-            // Skapar och initierar ett anslutningsobjekt.
-            using (SqlConnection connection = new SqlConnection(connectionString))
-            {
-                try
-                {
-                    // Skapar ett List-objekt med 100 platser.
-                    var User = new List<User>(100);
-
-                    // Skapar och initierar ett SqlCommand-objekt som används till att exekveras specifierad lagrad procedur.
-                    var command = new SqlCommand(sql, connection);
-
-
-                    // Öppnar anslutningen till databasen.
-                    connection.Open();
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        // Tar reda på vilket index de olika kolumnerna har.
-                        var UserID = reader.GetOrdinal("UserId");
-                        var UserName = reader.GetOrdinal("UserName");
-                        var FirstName = reader.GetOrdinal("FirstName");
-                        var LastName = reader.GetOrdinal("LastName");
-                        var Phone = reader.GetOrdinal("Phone");
-                        var Adress = reader.GetOrdinal("Adress");
-                        var Photo = reader.GetOrdinal("Photo");
-
-                        // Så länge som det finns poster att läsa returnerar Read true och läsningen fortsätter.
-                        while (reader.Read())
-                        {
-                            // Hämtar ut datat för en post.
-                            User.Add(new User
-                            {
-                            
-                           UserId = reader.GetInt32(UserID),
-                            UserName = reader.GetString(UserName),
-                            FirstName = reader.GetString(FirstName),
-                            LastName = reader.GetString(LastName),
-                             Phone = reader.GetString(Phone),
-                            Adress = reader.GetString(Adress),
-                           Photo = reader.GetString(Photo)
-
-                        });
-                        }
-                    }
-
-                    // Avallokerar minne som inte används och skickar tillbaks listan med aktiviteter.
-                    User.TrimExcess();
-
-                    return User;
-                }
-                catch
-                {
-                    throw new ApplicationException("An error occured while getting members from the database.");
-                }
-
-            }
-
-        }
-
 
 
         [Authorize(Roles = "User")]
 
         public ActionResult MySettings()// visar view med användare info för att kunna ändra den
         {
-            //this.User.Identity.Name= name of user login
-            var user = db.Users
-                .Where(u => u.UserName == this.User.Identity.Name)
-                .FirstOrDefault();
 
-            var view = new UserSettingsView
-            {
-                Adress = user.Adress,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Phone = user.Phone,
-                Photo = user.Photo,
-                UserId = user.UserId,
-                UserName = user.UserName,
-            };
+            var UserSettingsView = _userRepository.GetUserByUserEmail(this.User.Identity.Name);// this.User.Identity.Name ger oss användar namnet på användare som är email 
 
-            return View(view);
+            return View(UserSettingsView);
         }
 
         [HttpPost]
@@ -149,9 +76,9 @@ namespace OnlineVoting.Controllers
 
                 if (view.NewPhoto != null)
                 {
-                   
+
                     pic = Path.GetFileName(view.NewPhoto.FileName);//hämtar anmnet på bilden  
-                  
+
                     path = Path.Combine(Server.MapPath("~/Content/Photos"), pic);   //sökvägen(~= relative rute)
 
                     view.NewPhoto.SaveAs(path);// sparar vägen 
@@ -163,7 +90,7 @@ namespace OnlineVoting.Controllers
                     }
                 }
 
-                var user = db.Users.Find(view.UserId);
+                var user = _userRepository.GetUserByUserId(view.UserId);// hämtar user från DB
 
                 user.Adress = view.Adress;
                 user.FirstName = view.FirstName;
@@ -175,8 +102,10 @@ namespace OnlineVoting.Controllers
                     user.Photo = string.Format("~/Content/Photos/{0}", pic);
                 }
 
-                db.Entry(user).State = EntityState.Modified;
-                db.SaveChanges();
+                _userRepository.Update(user);// uppdaterar DB
+                _userRepository.Save();// sparar ändringar i DB
+
+                TempData["Message"] = "You have update your profile!";
 
                 return RedirectToAction("Index", "Home");
             }
@@ -185,58 +114,53 @@ namespace OnlineVoting.Controllers
         }
 
 
-
-
         [Authorize(Roles = "Admin")]
-
         public ActionResult OnOffAdmin(int id)// funktion som kan göra användare till admin, On/Off Admin 
         {
-            var user = db.Users.Find(id);
+            var user = _userRepository.GetUserByUserId(id);// får User från DB
 
             if (user != null)
             {
-                var userContext = new ApplicationDbContext();
-                var userManager = new UserManager<ApplicationUser>(new UserStore<ApplicationUser>(userContext));
-                var userASP = userManager.FindByEmail(user.UserName);
+
+                var userASP = _userRepository.GetUserByUserEmailFromASPdb(user.UserName);// kontrolerare om användare finns i asp.net DB
 
                 if (userASP != null)
                 {
-                    if (userManager.IsInRole(userASP.Id, "Admin"))
+                    if (_userRepository.GetIfUserIsAdminFromASPdb(userASP.Id.ToString()))// kontrolerare om användare är admin
                     {
-                        userManager.RemoveFromRole(userASP.Id, "Admin");
+                        _userRepository.DisableAdmin(userASP.Id);// tar bort Admin status 
                     }
                     else
                     {
-                        userManager.AddToRole(userASP.Id, "Admin");
+                        _userRepository.EnableAdmin(userASP.Id);// läger till Admin status 
                     }
                 }
             }
+
 
             return RedirectToAction("Index");
         }
 
 
-    
-
         [Authorize(Roles = "Admin")]
         public ActionResult Index()// hämtar lista på alla användare som finns på DB
         {
-            var userContext = new ApplicationDbContext();
-            var userManager = new UserManager<ApplicationUser>(new UserStore<ApplicationUser>(userContext));
-            var users = db.Users.ToList();
+
+
+            var usersList = _userRepository.GetListOfAllUser();
+
             var usersView = new List<UserIndexView>();
 
-            foreach (var user in users)
+            foreach (var user in usersList)
             {
-                var userASP = userManager.FindByEmail(user.UserName);
+                var userASP = _userRepository.GetUserByUserEmailFromASPdb(user.UserName);//UserName är email 
 
                 usersView.Add(new UserIndexView
                 {
                     Adress = user.Adress,
                     Candidates = user.Candidates,
                     FirstName = user.FirstName,
-                    //GroupMember = user.GroupMember,
-                    IsAdmin = userASP != null && userManager.IsInRole(userASP.Id, "Admin"),
+                    IsAdmin = userASP != null && _userRepository.GetIfUserIsAdminFromASPdb(userASP.Id.ToString()),//userManager.IsInRole(userASP.UserId, "Admin"),
                     LastName = user.LastName,
                     Phone = user.Phone,
                     Photo = user.Photo,
@@ -244,56 +168,61 @@ namespace OnlineVoting.Controllers
                     UserName = user.UserName,
                 });
             }
+
+            if (TempData["Message"] != null)
+            {
+                ViewBag.Message = TempData["Message"].ToString();// visar medelande som tagit med fron Edit view
+            }
+
             return View(usersView);
         }
 
-
         //---------------------------------------search User--------------------------------------------------
 
-        //Post AddCandidate
+
         [HttpPost]
         public ActionResult _SearchUser(String SearchText)// visar den användare man sökt på 
         {
 
-            var userContext = new ApplicationDbContext();
-            var userManager = new UserManager<ApplicationUser>(new UserStore<ApplicationUser>(userContext));
-     
             var usersView = new List<UserIndexView>();
             var users = new List<User>();
 
-            if (string.IsNullOrEmpty(SearchText))
+            if (string.IsNullOrEmpty(SearchText))// om inget namn gets vid sökings så får man lista på alla 
             {
-                 users = db.Users.ToList();
+
+                users = _userRepository.GetListOfAllUser();
             }
             else
             {
-                if (SearchText.Contains(" "))
+                if (SearchText.Contains(" "))// kontrolerare om sökningen man gör har ett för namn och efternamn 
                 {
                     string[] array = SearchText.Split(new char[] { ' ' }, 2);
 
                     var FirstNameText = array[0];
                     var LastNameText = array[1];
 
-                    users = db.Users.Where(x => x.FirstName.StartsWith(FirstNameText) & x.LastName.StartsWith(LastNameText)).ToList();// söker efter förnamn och efternam man sökt på i DB för att visas i viewn 
+                    users = _userRepository.GetListOfAllUserByFirstNameAndLastName(FirstNameText, LastNameText);// söker efter förnamn och efternam man sökt på i DB för att visas i viewn 
                 }
                 else
                 {
-                    users = db.Users.Where(x => x.FirstName.StartsWith(SearchText)).ToList();// söker efter förnamn man sökt på i DB för att visas i viewn 
+                    users = _userRepository.GetListUserByFirstName(SearchText);
+
                 }
             }
 
 
             foreach (var user in users)
             {
-                var userASP = userManager.FindByEmail(user.UserName);
+
+
+                var userASP = _userRepository.GetUserByUserEmailFromASPdb(user.UserName);// hämtar användare från ASP.net DB
 
                 usersView.Add(new UserIndexView
                 {
                     Adress = user.Adress,
                     Candidates = user.Candidates,
                     FirstName = user.FirstName,
-                    //GroupMember = user.GroupMember,
-                    IsAdmin = userASP != null && userManager.IsInRole(userASP.Id, "Admin"),
+                    IsAdmin = userASP != null && _userRepository.GetIfUserIsAdminFromASPdb(userASP.Id.ToString()),// kontrolerare om User är Admin
                     LastName = user.LastName,
                     Phone = user.Phone,
                     Photo = user.Photo,
@@ -303,41 +232,7 @@ namespace OnlineVoting.Controllers
 
             }
 
-            //test------------------------------------------------
-
-            //List<int> RemoveID = new List<int>();
-            /*
-                        for (var i = 0; i < UsersList.Count; i++)
-                        {
-
-                            var userContext = new ApplicationDbContext();
-                            var userManager = new UserManager<ApplicationUser>(new UserStore<ApplicationUser>(userContext));
-                            var userASP = userManager.FindByEmail(UsersList[i].UserName);
-
-
-                            if (userManager.IsInRole(userASP.Id, "Admin"))
-                            {
-                                //RemoveID.Add(i);
-                                ViewBag.Admin = 1;
-                            }
-                            else
-                            {
-                                ViewBag.Admin = 0;
-                            }
-
-                        }*/
-
-            /*for (int i = RemoveID.Count - 1; i >= 0; i--)
-            {
-                UsersList.RemoveAt(RemoveID[i]);
-            }*/
-
-            //-------------------------------------------------------
-
-
-
             return PartialView("_UserInfo", usersView);
-            //return RedirectToAction(string.Format("Details/{0}", ViewBag.VotingId));
 
         }
 
@@ -346,7 +241,6 @@ namespace OnlineVoting.Controllers
         {
             List<String> UsersList;// skapar lista som kommer användas för att spara alla User från DB
 
-
             if (term.Contains(" "))
             {
                 string[] array = term.Split(new char[] { ' ' }, 2);
@@ -354,22 +248,21 @@ namespace OnlineVoting.Controllers
                 var FirstNameText = array[0];
                 var LastNameText = array[1];
 
-                UsersList = db.Users.Where(x => x.FirstName.StartsWith(FirstNameText) & x.LastName.StartsWith(LastNameText)).Select(y => y.FirstName + " " + y.LastName).ToList();// söker efter förnamn och efternam man sökt på i DB för att visas på autocomplete 
+                UsersList = _userRepository.AutocompleteListByFirstNameAndLastName(FirstNameText, LastNameText);
+
 
             }
             else
             {
-                UsersList = db.Users.Where(x => x.FirstName.StartsWith(term)).Select(y => y.FirstName + " " + y.LastName).ToList();// söker efter förnamnet man sökt på i DB för att visas på autocomplete
+                UsersList = _userRepository.AutocompleteListByFirstName(term);
+
             }
 
 
             return Json(UsersList, JsonRequestBehavior.AllowGet);
         }
 
-
-
         //-----------------------------------------------------------------------------------------
-
 
         [Authorize(Roles = "Admin")]
         public ActionResult Details(int? id)// hämtar specifik användares info
@@ -378,7 +271,7 @@ namespace OnlineVoting.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            User user = db.Users.Find(id);
+            User user = _userRepository.GetUserByUserId(id.GetValueOrDefault());// .GetValueOrDefault(); omvandlar från en itne som kan ha värdet null till vanlig int genom att ge den värdet 0 om den är null
             if (user == null)
             {
                 return HttpNotFound();
@@ -438,12 +331,13 @@ namespace OnlineVoting.Controllers
 
             };
 
-            db.Users.Add(user);
+            _userRepository.Add(user);
 
             try
             {
-                db.SaveChanges();
-                this.CreateASPUser(userView);
+                _userRepository.Save(); // skpar användare i user DB
+
+                _userRepository.AdminCreatesUserInASPdb(userView);// skapar användare i asp.net automat genererad DB
             }
             catch (Exception ex)
             {
@@ -465,47 +359,6 @@ namespace OnlineVoting.Controllers
             return RedirectToAction("Index");
         }
 
-        private void CreateASPUser(UserView userView)// skapar en ny användare i ASP.net DB 
-        {
-
-            //user managment
-            var userContext = new ApplicationDbContext();
-            var userManager = new UserManager<ApplicationUser>(new UserStore<ApplicationUser>(userContext));
-            var roleManager = new RoleManager<IdentityRole>(new RoleStore<IdentityRole>(userContext));
-
-
-            string roleName = "User";// användarens rol i systemet  
-            // string roleName = "Admin"; // skapar en admin 
-
-            if (!roleManager.RoleExists(roleName))// kontrolerar om rolen existerar om den inte gör det så skapas den 
-            {
-
-                roleManager.Create(new IdentityRole(roleName));
-
-            }
-
-            
-
-            var userASP = new ApplicationUser // skapar ASPNetUser
-
-            {
-
-                UserName = userView.UserName,
-                Email = userView.UserName,
-                PhoneNumber = userView.Phone,
-
-            };
-
-            userManager.Create(userASP, userASP.UserName);
-
-            userASP = userManager.FindByName(userView.UserName);
-            userManager.AddToRole(userASP.Id, "User");// läger till role i DB, byt till Admin för att skapa en admin User 
-
-
-
-        }
-
-
 
         [Authorize(Roles = "Admin")]
         public ActionResult Edit(int? id)// används för att kuna ändra användares info
@@ -515,18 +368,19 @@ namespace OnlineVoting.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
 
-            var user = db.Users.Find(id);
+            var user = _userRepository.GetUserByUserId(id.GetValueOrDefault());
 
             if (user == null)
             {
                 return HttpNotFound();
+
             }
 
             var userView = new UserView
             {
 
                 Adress = user.Adress,
-                FirstName = user.Adress,
+                FirstName = user.FirstName,
                 LastName = user.LastName,
                 Phone = user.Phone,
                 UserId = user.UserId,
@@ -565,7 +419,7 @@ namespace OnlineVoting.Controllers
                 }
             }
 
-            var user = db.Users.Find(userView.UserId);
+            var user = _userRepository.GetUserByUserId(userView.UserId);
 
             user.Adress = userView.Adress;
             user.FirstName = userView.FirstName;
@@ -579,12 +433,13 @@ namespace OnlineVoting.Controllers
 
             }
 
+            _userRepository.Update(user);
+            _userRepository.Save();
 
-            db.Entry(user).State = EntityState.Modified;
-            db.SaveChanges();
+            TempData["Message"] = "You have update " + userView.FirstName + " " + userView.LastName + " profile!";
+
             return RedirectToAction("Index");
         }
-
 
 
         [Authorize(Roles = "Admin")]
@@ -594,7 +449,7 @@ namespace OnlineVoting.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            User user = db.Users.Find(id);
+            User user = _userRepository.GetUserByUserId(id.GetValueOrDefault());
             if (user == null)
             {
                 return HttpNotFound();
@@ -606,13 +461,13 @@ namespace OnlineVoting.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)// postar användare som ska tas bort 
         {
-            User user = db.Users.Find(id);
+            User user = _userRepository.GetUserByUserId(id);
 
-            db.Users.Remove(user);
+            _userRepository.Delete(user);
 
             try
             {
-                db.SaveChanges();
+                _userRepository.Save();
             }
 
             catch (Exception ex)
@@ -635,13 +490,5 @@ namespace OnlineVoting.Controllers
 
         }
 
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                db.Dispose();
-            }
-            base.Dispose(disposing);
-        }
     }
 }

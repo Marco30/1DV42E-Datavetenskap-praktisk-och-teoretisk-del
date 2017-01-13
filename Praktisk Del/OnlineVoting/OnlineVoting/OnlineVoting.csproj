@@ -212,6 +212,14 @@
     <Compile Include="Models\IdentityModels.cs" />
     <Compile Include="Models\Rank.cs" />
     <Compile Include="Models\RegisterUserView.cs" />
+    <Compile Include="Models\Repository\IAccountRepository.cs" />
+    <Compile Include="Models\Repository\AccountRepository.cs" />
+    <Compile Include="Models\Repository\StateRepository .cs" />
+    <Compile Include="Models\Repository\IStateRepository.cs" />
+    <Compile Include="Models\Repository\IElectionRepository.cs" />
+    <Compile Include="Models\Repository\IUserRepository.cs" />
+    <Compile Include="Models\Repository\ElectionRepository.cs" />
+    <Compile Include="Models\Repository\UserRepository.cs" />
     <Compile Include="Models\State.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\UserIndexView.cs" />
@@ -229,8 +237,18 @@
     <Content Include="Content\bootstrap.css" />
     <Content Include="Content\bootstrap.min.css" />
     <Content Include="Content\FormStyle.css" />
+    <Content Include="Content\Images\book1.png" />
+    <Content Include="Content\Images\cool.jpg" />
+    <Content Include="Content\Images\cool1.jpg" />
+    <Content Include="Content\Images\key3.png" />
+    <Content Include="Content\Images\register3.png" />
+    <Content Include="Content\Images\Result2.png" />
     <Content Include="Content\Images\Settings.png" />
     <Content Include="Content\Images\Elections.jpg" />
+    <Content Include="Content\Images\state.png" />
+    <Content Include="Content\Images\T1.png" />
+    <Content Include="Content\Images\user4.png" />
+    <Content Include="Content\Images\vote1.png" />
     <Content Include="Content\Images\Voting.png" />
     <Content Include="Content\Images\ui-icons_444444_256x240.png" />
     <Content Include="Content\Images\ui-icons_555555_256x240.png" />
@@ -239,8 +257,15 @@
     <Content Include="Content\Images\ui-icons_cc0000_256x240.png" />
     <Content Include="Content\Images\ui-icons_ffffff_256x240.png" />
     <Content Include="Content\Images\Result.jpg" />
+    <Content Include="Content\Images\way.jpg" />
+    <Content Include="Content\Images\way1.jpg" />
+    <Content Include="Content\Images\way2.jpg" />
+    <Content Include="Content\Images\way3.jpg" />
+    <Content Include="Content\Images\way4.jpg" />
     <Content Include="Content\jquery-ui.min.css" />
     <Content Include="Content\jquery.timepicker.css" />
+    <Content Include="Content\Photos\MeAndMyself2.png" />
+    <Content Include="Content\XML\UserList.xml" />
     <Content Include="favicon.ico" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Global.asax" />
@@ -269,7 +294,9 @@
     <Content Include="Scripts\respond.js" />
     <Content Include="Scripts\respond.min.js" />
     <Content Include="Scripts\_references.js" />
-    <Content Include="Web.config" />
+    <Content Include="Web.config">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </Content>
@@ -323,8 +350,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
-    <Folder Include="Content\Photos\" />
-    <Folder Include="Content\XML\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="fonts\glyphicons-halflings-regular.woff" />

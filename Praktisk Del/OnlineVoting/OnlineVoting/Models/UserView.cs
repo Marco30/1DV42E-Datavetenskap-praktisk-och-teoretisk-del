@@ -37,6 +37,7 @@ namespace OnlineVoting.Models
         [StringLength(100, ErrorMessage = "The field {0} can contain maximum {1} and minimum {2} characters", MinimumLength = 10)]
         public String Adress { get; set; }
 
+        [Required(ErrorMessage = "img {0} is required")]
         public HttpPostedFileBase Photo { get; set; }
 
     }

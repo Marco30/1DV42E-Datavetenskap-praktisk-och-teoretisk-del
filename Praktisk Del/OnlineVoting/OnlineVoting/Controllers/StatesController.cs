@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Web;
 using System.Web.Mvc;
+using OnlineVoting.Models.Repository;
 
 namespace OnlineVoting.Controllers
 {
@@ -13,7 +14,12 @@ namespace OnlineVoting.Controllers
     public class StatesController : Controller
     {
 
-        public OnlineVotingContext db = new OnlineVotingContext();
+        private IStateRepository _stateRepository;
+
+        public StatesController()
+        {
+            _stateRepository = new StateRepository();
+        }
 
         [HttpGet]
         public ActionResult Index()//visar alla states
@@ -23,7 +29,7 @@ namespace OnlineVoting.Controllers
             {
                 ViewBag.Message = TempData["Message"].ToString();// visar medelande som tagit med fron Edit eller delit view
             }
-            return View(db.States.ToList());
+            return View(_stateRepository.GetAllState());
         }
 
         [HttpGet]
@@ -43,9 +49,8 @@ namespace OnlineVoting.Controllers
 
             }
 
-            db.States.Add(state);
-            db.SaveChanges();
-
+            _stateRepository.AddState(state);
+            _stateRepository.Save();
             return RedirectToAction("Index");
         }
 
@@ -58,7 +63,8 @@ namespace OnlineVoting.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
 
-            var state = db.States.Find(id);
+            var state = _stateRepository.GetStateById(id.GetValueOrDefault());
+
 
             if (state == null)
             {
@@ -84,10 +90,10 @@ namespace OnlineVoting.Controllers
         public ActionResult Edit(State state)// postar ändringar man gjort på state
         {
 
-            //var S1 = db.States.Find(state.StateId);
             // används för att inte Entity Framework inte ska binda sig till state modelen så att den längre ner kan updateras utan problem
-            var S1 = db.States.AsNoTracking().Where(p => p.StateId == state.StateId).FirstOrDefault();
-            
+            var S1 = _stateRepository.GetStateByIdNoTracking(state.StateId);
+
+
             if ("Open" == S1.Descripcion | "Closed" == S1.Descripcion)// används här i den här post funktionen för att hindra post attacker som kan göras genom URL, man postar ändrignar som int ska gå att göras, 
             {
                 TempData["Message"] = "You tried to use the URL to Post Edit (" + S1.Descripcion + "), This State can not be edited because it is vital for OnlineVotingSystem!";
@@ -101,9 +107,9 @@ namespace OnlineVoting.Controllers
             }
             else
             {
-                
-                db.Entry(state).State = EntityState.Modified;
-                db.SaveChanges();
+                _stateRepository.UpdateState(state);
+  
+                _stateRepository.Save();
                 return RedirectToAction("Index");
             }
         }
@@ -116,7 +122,8 @@ namespace OnlineVoting.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
 
-            var state = db.States.Find(id);
+            var state = _stateRepository.GetStateById(id.GetValueOrDefault());
+         
 
             if (state == null)
             {
@@ -130,7 +137,6 @@ namespace OnlineVoting.Controllers
         }
 
         [HttpGet]
-
         public ActionResult Delete(int? id)// visar bekräftelse view för att ta bort 
         {
             if (id == null)
@@ -138,7 +144,7 @@ namespace OnlineVoting.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
 
-            var state = db.States.Find(id);
+            var state = _stateRepository.GetStateById(id.GetValueOrDefault());
 
             if (state == null)
             {
@@ -159,13 +165,13 @@ namespace OnlineVoting.Controllers
         }
 
         [HttpPost]
-        //[ValidateAntiForgeryToken]
+        [ValidateAntiForgeryToken]
         public ActionResult Delete(int id)// posta och tar bort state 
         {
 
 
-            var state = db.States.Find(id);
-
+            var state = _stateRepository.GetStateById(id);
+           
             if (state == null)
             {
 
@@ -181,11 +187,12 @@ namespace OnlineVoting.Controllers
             }
             else
             {
-                db.States.Remove(state);
+                _stateRepository.DeleteState(state);
+           
 
                 try
                 {
-                    db.SaveChanges();
+                    _stateRepository.Save();
                 }
                 catch (Exception ex)
                 {
@@ -212,20 +219,6 @@ namespace OnlineVoting.Controllers
 
 
 
-        }
-
-
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-
-                db.Dispose();
-
-            }
-
-            base.Dispose(disposing);
         }
 
     }

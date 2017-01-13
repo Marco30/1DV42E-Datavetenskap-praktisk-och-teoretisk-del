@@ -15,7 +15,7 @@ namespace OnlineVoting.Models
     
         [Required(ErrorMessage = "The field {0} is required")]
         [StringLength(50, ErrorMessage = "The field {0} can contain maximun {1} and minimum {2} characters", MinimumLength = 3)]
-        [Display(Name = "Voting description")]
+        [Display(Name = "Election name")]
         public string Description { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]

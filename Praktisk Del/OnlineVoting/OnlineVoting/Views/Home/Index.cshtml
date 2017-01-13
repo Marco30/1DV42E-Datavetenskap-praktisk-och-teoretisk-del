@@ -6,8 +6,7 @@
 @if (!this.User.IsInRole("Admin") && !this.User.IsInRole("User"))
 {
 
-    <div class="jumbotron">
-
+ <div class="jumbotron">
         <div class="rowoval">
 
 
@@ -62,6 +61,12 @@
 
 @if (this.User.IsInRole("User"))
 {
+    <p>
+        <div id="Success1">
+            @ViewBag.Message
+        </div>
+    </p>
+
     <div class="rowoval">
 
         @*<div class="col-md-4">
@@ -80,6 +85,7 @@
                 </div>
 
             </div>*@
+
 
     </div>
 
@@ -167,6 +173,7 @@
                 </div>
 
             </div>*@
+
 
     </div>
 

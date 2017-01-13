@@ -11,107 +11,66 @@ using System.Data.SqlClient;
 using System.Configuration;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.EntityFramework;
+using OnlineVoting.Models.Repository;
 
 namespace OnlineVoting.Controllers
 {
 
     public class VotingsController : Controller
     {
-        private OnlineVotingContext db = new OnlineVotingContext();
+
+
+        private IElectionRepository _electionRepository;
+        private IUserRepository _userRepository;
+        private IStateRepository _stateRepository;
+
+        public VotingsController()
+        {
+            _electionRepository = new ElectionRepository();
+            _userRepository = new UserRepository();
+            _stateRepository = new StateRepository();
+        }
+
 
         [Authorize(Roles = "Admin")]
         public ActionResult Close(int id)// används för att stänga vallet 
         {
-            var voting = db.Votings.Find(id);
+
+            var voting = _electionRepository.GetElectionById(id);
+
             if (voting != null)
             {
-                var candidate = db.Candidates
-                    .Where(c => c.VotingId == voting.VotingId)
-                    .OrderByDescending(c => c.QuantityVotes)
-                    .FirstOrDefault();
+                var candidate = _electionRepository.GetListOfAllElectionCandidates(voting.VotingId);
+
+
                 if (candidate != null)
                 {
                     var state = this.GetState("Closed");
                     voting.StateId = state.StateId;
                     voting.CandidateWinId = candidate.User.UserId;
-                    db.Entry(voting).State = EntityState.Modified;
-                    db.SaveChanges();
+
+                    _electionRepository.UpdateElection(voting);// updaterar valet i DB
+
+                    _electionRepository.Save();// sparar ändrignarna til DB 
+
                 }
             }
+
             return RedirectToAction("Index");
         }
 
 
         public ActionResult ShowResults(int id)// visar resultat på valet med vinar och lista på alla deltagar och antal röster dem fåt
         {
-            var connectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
 
+            var Rank = _electionRepository.ShowResultsOfElectionById(id);
 
-            var dataTable = new DataTable();
-            //@ from not concatenate
-            var sql = @"SELECT  Votings.VotingId, Votings.Description AS Voting, States.Descripcion AS State, 
-                                Users.FirstName + ' ' + Users.LastName AS Candidate, Candidates.QuantityVotes
-                         FROM   Candidates INNER JOIN
-                                Users ON Candidates.UserId = Users.UserId INNER JOIN
-                                Votings ON Candidates.VotingId = Votings.VotingId INNER JOIN
-                                States ON Votings.StateId = States.StateId
-                          WHERE Votings.VotingId =" + id + " ORDER BY Candidates.QuantityVotes DESC";
+            ViewBag.NameOfElection = Rank[0].Electionname;
+            ViewBag.StateOfElection = Rank[0].State;
+            ViewBag.WinnerOfElection = Rank[0].Candidate;
+            ViewBag.NumberOfVotes = Rank[0].QuantityVotes;
 
-            // Skapar och initierar ett anslutningsobjekt.
-            using (SqlConnection connection = new SqlConnection(connectionString))
-            {
-                try
-                {
-                    // Skapar ett List-objekt med 100 platser.
-                    var Rank = new List<Rank>(100);
-
-                    // Skapar och initierar ett SqlCommand-objekt som används till att exekveras specifierad lagrad procedur.
-                    var command = new SqlCommand(sql, connection);
-
-
-                    // Öppnar anslutningen till databasen.
-                    connection.Open();
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        // Tar reda på vilket index de olika kolumnerna har.
-                        var VotingID = reader.GetOrdinal("VotingID");
-                        var Electionname = reader.GetOrdinal("Voting");
-                        var State = reader.GetOrdinal("State");
-                        var Candidate = reader.GetOrdinal("Candidate");
-                        var QuantityVotest = reader.GetOrdinal("QuantityVotes");
-
-
-                        // Så länge som det finns poster att läsa returnerar Read true och läsningen fortsätter.
-                        while (reader.Read())
-                        {
-                            // Hämtar ut datat för en post.
-                            Rank.Add(new Rank
-                            {
-                                VotingID = reader.GetInt32(VotingID),
-                                Electionname = reader.GetString(Electionname),
-                                State = reader.GetString(State),
-                                Candidate = reader.GetString(Candidate),
-                                QuantityVotes = reader.GetInt32(QuantityVotest)
-
-                            });
-                        }
-                    }
-
-                    ViewBag.NameOfElection = Rank[0].Electionname;
-                    ViewBag.StateOfElection = Rank[0].State;
-                    ViewBag.WinnerOfElection = Rank[0].Candidate;
-                    ViewBag.NumberOfVotes = Rank[0].QuantityVotes;
-                    // Avallokerar minne som inte används och skickar tillbaks listan med aktiviteter.
-                    Rank.TrimExcess();
-                    return View(Rank);
-                }
-                catch
-                {
-                    throw new ApplicationException("An error occured while getting members from the database.");
-                }
-            }
-
+            return View(Rank);
         }
 
 
@@ -119,21 +78,21 @@ namespace OnlineVoting.Controllers
         public ActionResult Results()// listar alla val som hålits
         {
             var state = this.GetState("Closed");
-            var votings = db.Votings
-                .Where(v => v.StateId == state.StateId)
-                .Include(v => v.State);
+
+            var votings = _electionRepository.GetElectionByStateId(state);
+
             var views = new List<VotingIndexView>();
-            var db2 = new OnlineVotingContext();
 
             var Yearlist = new List<string>();
 
-            //Winner
-            foreach (var voting in votings)
+
+            foreach (var voting in votings)// går igenom listan man fåt från DB och skapar ny model 
             {
                 User user = null;
+
                 if (voting.CandidateWinId != 0)
                 {
-                    user = db2.Users.Find(voting.CandidateWinId);
+                    user = _userRepository.GetUserByUserId(voting.CandidateWinId);
                 }
 
                 views.Add(new VotingIndexView
@@ -167,6 +126,13 @@ namespace OnlineVoting.Controllers
 
             ViewBag.SelectedMonths = new SelectList(Monthslist, "MonthsID", "Months");
 
+            ViewBag.empty = false;
+
+            if (views.Count == 0)
+            {
+                ViewBag.empty = true;
+            }
+
             return View(views);
 
 
@@ -187,11 +153,11 @@ namespace OnlineVoting.Controllers
 
             if (string.IsNullOrEmpty(SearchText))
             {
-                ElectionList = db.Votings.Where(v => v.StateId == state.StateId).Include(v => v.State).ToList();
+                ElectionList = _electionRepository.GetElectionByStateId(state);
             }
             else
             {
-                ElectionList = db.Votings.Where(x => x.Description.StartsWith(SearchText) & x.StateId == state.StateId).ToList();// söker efter förnamn man sökt på i DB för att visas i viewn 
+                ElectionList = _electionRepository.GetElectionByNameAndStateId(SearchText, state);// söker efter val namnet man sökt på i DB för att visas i viewn 
             }
 
             foreach (var Election in ElectionList)
@@ -199,7 +165,7 @@ namespace OnlineVoting.Controllers
                 User user = null;
                 if (Election.CandidateWinId != 0)
                 {
-                    user = db.Users.Find(Election.CandidateWinId);
+                    user = _userRepository.GetUserByUserId(Election.CandidateWinId);
                 }
 
                 views.Add(new VotingIndexView
@@ -223,7 +189,6 @@ namespace OnlineVoting.Controllers
 
 
             return PartialView("_UserResultsInfo", views);
-            //return RedirectToAction(string.Format("Details/{0}", ViewBag.VotingId));
         }
 
 
@@ -233,9 +198,7 @@ namespace OnlineVoting.Controllers
 
             var state = this.GetState("Closed");
 
-            ElectionList = db.Votings.Where(x => x.Description.StartsWith(term) & x.StateId == state.StateId).Select(y => y.Description).ToList();// söker efter förnamnet man sökt på i DB för att visas på autocomplete
-
-
+            ElectionList = _electionRepository.GetElectionByNameAndStateIdForAutocomplete(term, state);//  söker efter namnet man sökt på och state i DB för att visas på autocomplete
 
             return Json(ElectionList, JsonRequestBehavior.AllowGet);
         }
@@ -280,21 +243,21 @@ namespace OnlineVoting.Controllers
             {
                 Syear = Int32.Parse(SelectedYear);
 
-                ElectionList = db.Votings.Where(x => x.DateTimeStart.Year == Syear & x.DateTimeStart.Month == MonthsNum & x.StateId == state.StateId).ToList();// söker efter förnamn man sökt på i DB för att visas i viewn 
+                ElectionList = _electionRepository.GetElectionByYearMonthsAndStateId(Syear, MonthsNum, state);
             }
             else if (SelectedYear != "" & SelectedMonths == "")
             {
 
                 Syear = Int32.Parse(SelectedYear);
-                ElectionList = db.Votings.Where(x => x.DateTimeStart.Year == Syear & x.StateId == state.StateId).ToList();
+                ElectionList = _electionRepository.GetElectionByYearAndStateId(Syear, state);
             }
             else if (SelectedYear == "" & SelectedMonths != "")
             {
-                ElectionList = db.Votings.Where(x => x.DateTimeStart.Month == MonthsNum & x.StateId == state.StateId).ToList();
+                ElectionList = _electionRepository.GetElectionByMonthsAndStateId(MonthsNum, state);
             }
             else
             {
-                ElectionList = db.Votings.Where(x => x.StateId == state.StateId).ToList();
+                ElectionList = _electionRepository.GetElectionByStateId(state);
             }
 
             var views = new List<VotingIndexView>();
@@ -304,7 +267,7 @@ namespace OnlineVoting.Controllers
                 User user = null;
                 if (Election.CandidateWinId != 0)
                 {
-                    user = db.Users.Find(Election.CandidateWinId);
+                    user = _userRepository.GetUserByUserId(Election.CandidateWinId);
                 }
 
                 views.Add(new VotingIndexView
@@ -333,19 +296,17 @@ namespace OnlineVoting.Controllers
 
         }
 
-        //-----------------------------------------------------------------------------------------
 
         //------------------------------------------ test månad 
 
-
         //[HttpPost]
-        public JsonResult FetchMonthsResults(int selectedYear)
+        public JsonResult FetchMonthsResults(int selectedYear)// genrerar månaderna som har eller har haft vall ut i från året i DB
         {
             var state = this.GetState("Closed");
 
             int Year = selectedYear; //Int32.Parse(selectedYear);
 
-            var votings = db.Votings.Where(x => x.DateTimeStart.Year == Year & x.StateId == state.StateId).ToList();
+            var votings = _electionRepository.GetElectionByYearAndStateId(Year, state);
 
             var MontsListsOfYear = new List<MonthsList>();
 
@@ -379,16 +340,11 @@ namespace OnlineVoting.Controllers
 
             }
 
-            //var sl = Monthslist.Select(s => new SelectListItem { Value = s }).ToList();
-
             TempData["List"] = MontsListsOfYear.OrderBy(s => s.Months).ToList();
 
-
-            //IEnumerable<int> months = db.yourTable().Where(x => x.Year == selectedYear).Select(x => x.Month);
-
-            //return Json(ViewBag.SelectedMonths, JsonRequestBehavior.AllowGet);
             return Json(MontsListsOfYear, JsonRequestBehavior.AllowGet);
         }
+
         //-------------------------------------------
 
 
@@ -397,23 +353,23 @@ namespace OnlineVoting.Controllers
         public ActionResult VoteForCandidate(int candidateId, int votingId)// röstnings funktion, används för att rösta 
         {
             // validering av anvädnare 
-            var user = db.Users
-                .Where(u => u.UserName == this.User.Identity.Name)
-                .FirstOrDefault();
+            var user = _userRepository.GetUserByUserEmail(this.User.Identity.Name);
+
 
             if (user == null)
             {
                 return RedirectToAction("Index", "Home");
             }
 
-            var candidate = db.Candidates.Find(candidateId);
+            var candidate = _electionRepository.GetCandidateById(candidateId);
 
             if (candidate == null)
             {
                 return RedirectToAction("Index", "Home");
             }
 
-            var voting = db.Votings.Find(votingId);
+            var voting = _electionRepository.GetElectionById(votingId);
+
 
             if (voting == null)
             {
@@ -423,6 +379,8 @@ namespace OnlineVoting.Controllers
             //kör röstnings funktionen 
             if (this.VoteCandidate(user, candidate, voting))
             {
+                TempData["Message"] = "Success,You have voted!";
+
                 return RedirectToAction("MyVotings");
             }
 
@@ -432,7 +390,7 @@ namespace OnlineVoting.Controllers
         private bool VoteCandidate(Models.User user, Candidate candidate, Voting voting) // röstnings funktion 
         {
 
-            using (var transaction = db.Database.BeginTransaction())// kontakt med DB och transaction anbvänds i MVC för att kunna läga till data i flera tabeler 
+            using (var transaction = _electionRepository.Transaction())// kontakt med DB och transaction anbvänds i MVC för att kunna läga till data i flera tabeler 
             {
                 var votingDetail = new VotingDetail
                 {
@@ -442,20 +400,22 @@ namespace OnlineVoting.Controllers
                     VotingID = voting.VotingId,
                 };
 
-                db.VotingDetails.Add(votingDetail);
+
+                _electionRepository.VotingDetailAdd(votingDetail);
 
 
                 candidate.QuantityVotes++;// läger till en röst 
 
-                db.Entry(candidate).State = EntityState.Modified;// läger till röst i DB
+                _electionRepository.UpdateCandidate(candidate);// läger till röst i DB
 
                 voting.QuantityVotes++;
-                db.Entry(voting).State = EntityState.Modified;
+
+                _electionRepository.UpdateElection(voting);
 
                 //sparar data i DB
                 try
                 {
-                    db.SaveChanges();
+                    _electionRepository.Save();
 
                     transaction.Commit();
                     return true;
@@ -475,23 +435,23 @@ namespace OnlineVoting.Controllers
         {
 
             // validering av anvädnare 
-            var user = db.Users
-                .Where(u => u.UserName == this.User.Identity.Name)
-                .FirstOrDefault();
+            var user = _userRepository.GetUserByUserEmail(this.User.Identity.Name);
 
             if (user == null)
             {
                 return RedirectToAction("Index", "Home");
             }
 
-            var candidate = db.Candidates.Find(candidateId);
+            var candidate = _electionRepository.GetCandidateById(candidateId);
+
 
             if (candidate == null)
             {
                 return RedirectToAction("Index", "Home");
             }
 
-            var voting = db.Votings.Find(votingId);
+            var voting = _electionRepository.GetElectionById(votingId);
+
 
             if (voting == null)
             {
@@ -501,6 +461,8 @@ namespace OnlineVoting.Controllers
             //validering om man inte röstat så kommer man hitt 
             if (this.VoteBlank(user, candidate, voting))
             {
+                TempData["Message"] = "Success,You have voted!";// meddelar att man röstat 
+
                 return RedirectToAction("MyVotings");
             }
 
@@ -510,7 +472,7 @@ namespace OnlineVoting.Controllers
         private bool VoteBlank(Models.User user, Candidate candidate, Voting voting) // röstnings funktion för att rösta blankt 
         {
 
-            using (var transaction = db.Database.BeginTransaction())// kontakt med DB och transaction anbvänds i MVC för att kunna läga till data i flera tabeler 
+            using (var transaction = _electionRepository.Transaction())// kontakt med DB och transaction anbvänds i MVC för att kunna läga till data i flera tabeler 
             {
                 var votingDetail = new VotingDetail
                 {
@@ -520,23 +482,19 @@ namespace OnlineVoting.Controllers
                     VotingID = voting.VotingId,
                 };
 
-                db.VotingDetails.Add(votingDetail);
-
-
-                /* candidate.QuantityVotes++;// läger till en röst 
-
-                 db.Entry(candidate).State = EntityState.Modified;// läger till röst i DB*/
+                _electionRepository.VotingDetailAdd(votingDetail);
 
                 voting.QuantityVotes++;
 
                 voting.QuantityBlankVotes++;
 
-                db.Entry(voting).State = EntityState.Modified;
+                _electionRepository.UpdateElection(voting);
 
                 //sparar data i DB
                 try
                 {
-                    db.SaveChanges();
+                    _electionRepository.Save();
+
                     transaction.Commit();
                     return true;
                 }
@@ -553,7 +511,8 @@ namespace OnlineVoting.Controllers
         [Authorize(Roles = "User")]
         public ActionResult Vote(int votingId)// visar röstnigns Viewn
         {
-            var voting = db.Votings.Find(votingId);
+            var voting = _electionRepository.GetElectionById(votingId);
+
             var view = new VotingVoteView
             {
 
@@ -569,7 +528,8 @@ namespace OnlineVoting.Controllers
 
             ViewBag.IsEnableBlankVote = voting.IsEnableBlankVote;
 
-            var state = db.States.Find(voting.StateId);
+            var state = _stateRepository.GetStateById(voting.StateId);
+
 
             ViewBag.StateDescripcion = state.Descripcion;
 
@@ -581,28 +541,19 @@ namespace OnlineVoting.Controllers
         public ActionResult MyVotings()// visar valen som är pågång 
         {
             // söker login
-            var user = db.Users
-                .Where(u => u.UserName == this.User.Identity.Name)
-                .FirstOrDefault();
+            var user = _userRepository.GetUserByUserEmail(this.User.Identity.Name);
+
 
             if (user == null)
             {
-                ModelState.AddModelError(
-                    string.Empty,
-                    "There an error with the current user, call the support");
+                ModelState.AddModelError(string.Empty, "There an error with the current user, call the support");
                 return View();
             }
 
 
             var state = this.GetState("Open");// hämtar valen som är öpan/ där röstnings tiden gäller 
 
-            var votings = db.Votings
-                .Where(v => v.StateId == state.StateId &&
-                v.DateTimeStart <= DateTime.Now &&
-                v.DateTimeEnd >= DateTime.Now)
-                .Include(v => v.Candidates)
-                .Include(v => v.State)
-                .ToList();
+            var votings = _electionRepository.GetListOfElectionIfOpen(state);// hämtar valen som är öpan, där röstnings tiden gäller 
 
 
             //tar bort val där användaren redan röstat  
@@ -610,9 +561,9 @@ namespace OnlineVoting.Controllers
             {
 
 
-                var votingDetail = db.VotingDetails.
-                    Where(vd => vd.VotingID == voting.VotingId &&
-                    vd.UserId == user.UserId).FirstOrDefault();
+                var votingDetail = _electionRepository.GetIfUserAlreadyVotedInElection(voting.VotingId, user.UserId);
+
+
 
                 if (votingDetail != null)
                 {
@@ -621,15 +572,31 @@ namespace OnlineVoting.Controllers
 
             }
 
-            return View(votings);
+            if (TempData["Message"] != null)
+            {
+                ViewBag.Message = TempData["Message"].ToString();// visar medelande som tagit med fron myvoting view
+            }
+
+            //konroll om val listan är tom 
+
+            ViewBag.empty = false;
+
+                if (votings.Count == 0)
+                {
+                    ViewBag.empty = true;
+                }
+   
+
+                return View(votings);
         }
 
 
 
         private State GetState(string stateName)// konrolerar State om valet är öppet eller stängt 
         {
-            var state = db.States.Where(s => s.Descripcion == stateName)
-                .FirstOrDefault();
+            var state = _stateRepository.GetStateByStateName(stateName);
+
+
             if (state == null)
             {
                 state = new State
@@ -637,8 +604,9 @@ namespace OnlineVoting.Controllers
                     Descripcion = stateName,
                 };
 
-                db.States.Add(state);
-                db.SaveChanges();
+                _stateRepository.AddState(state);
+
+                _stateRepository.Save();
             }
 
             return state;
@@ -651,24 +619,20 @@ namespace OnlineVoting.Controllers
         {
             List<int> RemoveID = new List<int>();
 
-            var users = db.Users.ToList();
+            var users = _userRepository.GetListOfAllUser();
+
 
             for (var i = 0; i < users.Count; i++)
             {
-                //nsole.WriteLine("Amount is {0} and type is {1}", myMoney[i].amount, myMoney[i].type);
+
                 var UserId = users[i].UserId;
 
-                var candidate = db.Candidates
-                   .Where(c => c.VotingId == id &&
-                               c.UserId == UserId)
-                               .FirstOrDefault();
+                var candidate = _electionRepository.GetCandidateByElectionIdAndUserId(id, UserId);
 
-                var userContext = new ApplicationDbContext();
-                var userManager = new UserManager<ApplicationUser>(new UserStore<ApplicationUser>(userContext));
-                var userASP = userManager.FindByEmail(users[i].UserName);
+                var userASP = _userRepository.GetUserByUserEmailFromASPdb(users[i].UserName);
 
 
-                if (userManager.IsInRole(userASP.Id, "Admin"))
+                if (_userRepository.GetIfUserIsAdminFromASPdb(userASP.Id))
                 {
                     RemoveID.Add(i);
                 }
@@ -704,7 +668,8 @@ namespace OnlineVoting.Controllers
 
             if (string.IsNullOrEmpty(SearchText))
             {
-                UsersList = db.Users.ToList();
+                UsersList = _userRepository.GetListOfAllUser();
+
             }
             else
             {
@@ -715,60 +680,38 @@ namespace OnlineVoting.Controllers
                     var FirstNameText = array[0];
                     var LastNameText = array[1];
 
-                    UsersList = db.Users.Where(x => x.FirstName.StartsWith(FirstNameText) & x.LastName.StartsWith(LastNameText)).ToList();// söker efter förnamn och efternam man sökt på i DB för att visas i viewn 
+                    UsersList = _userRepository.GetListOfAllUserByFirstNameAndLastName(FirstNameText, LastNameText);
+
                 }
                 else
                 {
-                    UsersList = db.Users.Where(x => x.FirstName.StartsWith(SearchText)).ToList();// söker efter förnamn man sökt på i DB för att visas i viewn 
+                    UsersList = _userRepository.GetListUserByFirstName(SearchText);// söker efter förnamn man sökt på i DB för att visas i viewn 
                 }
             }
 
-            //test------------------------------------------------
-
-            //List<int> RemoveID = new List<int>();
 
             for (var i = 0; i < UsersList.Count; i++)
             {
-                //nsole.WriteLine("Amount is {0} and type is {1}", myMoney[i].amount, myMoney[i].type);
-                /*  var UserId = UsersList[i].UserId;
 
-                  var candidate = db.Candidates
-                     .Where(c => c.VotingId == id &&
-                                 c.UserId == UserId)
-                                 .FirstOrDefault();*/
-
-                var userContext = new ApplicationDbContext();
-                var userManager = new UserManager<ApplicationUser>(new UserStore<ApplicationUser>(userContext));
-                var userASP = userManager.FindByEmail(UsersList[i].UserName);
+                var userASP = _userRepository.GetUserByUserEmailFromASPdb(UsersList[i].UserName);
 
 
-                if (userManager.IsInRole(userASP.Id, "Admin"))
+                if (_userRepository.GetIfUserIsAdminFromASPdb(userASP.Id))
                 {
-                    //RemoveID.Add(i);
+
                     ViewBag.Admin = 1;
                 }
                 else
                 {
                     ViewBag.Admin = 0;
                 }
-                /* else if (candidate != null)//om canditaten redan fins i valet startat fi statsen som kommer spara index för att sen ta bort den användaren från user listan på Users som kan lägas till i valet 
-                 {
-                     RemoveID.Add(i);
-                 }*/
+
             }
-
-            /*for (int i = RemoveID.Count - 1; i >= 0; i--)
-            {
-                UsersList.RemoveAt(RemoveID[i]);
-            }*/
-
-            //-------------------------------------------------------
 
 
             ViewBag.VotingId = id.ToString();
 
             return PartialView("_SearchAndAddCandidate", UsersList);
-            //return RedirectToAction(string.Format("Details/{0}", ViewBag.VotingId));
 
         }
 
@@ -784,12 +727,12 @@ namespace OnlineVoting.Controllers
                 var FirstNameText = array[0];
                 var LastNameText = array[1];
 
-                UsersList = db.Users.Where(x => x.FirstName.StartsWith(FirstNameText) & x.LastName.StartsWith(LastNameText)).Select(y => y.FirstName + " " + y.LastName).ToList();// söker efter förnamn och efternam man sökt på i DB för att visas på autocomplete 
+                UsersList = _userRepository.AutocompleteListByFirstNameAndLastName(FirstNameText, LastNameText);// söker efter förnamn och efternam man sökt på i DB för att visas på autocomplete 
 
             }
             else
             {
-                UsersList = db.Users.Where(x => x.FirstName.StartsWith(term)).Select(y => y.FirstName + " " + y.LastName).ToList();// söker efter förnamnet man sökt på i DB för att visas på autocomplete
+                UsersList = _userRepository.AutocompleteListByFirstName(term);// söker efter förnamnet man sökt på i DB för att visas på autocomplete
             }
 
 
@@ -802,59 +745,37 @@ namespace OnlineVoting.Controllers
         public ActionResult MakeUserToCandidate(int UserID, int VotingID, string UserFullName)// postar användare man valt till kandidat
         {
 
-            var view = new AddCandidateView
-            {
-                VotingId = VotingID,
-                UserId = UserID,
-            };
 
             //så man inte lägger inte samma kandidat två gånger 
-            var candidate = db.Candidates
-                .Where(c => c.VotingId == view.VotingId &&
-                            c.UserId == view.UserId)
-                            .FirstOrDefault();
+            var candidate = _electionRepository.GetCandidateByElectionIdAndUserId(VotingID, UserID);
 
-            if (candidate != null)
+
+
+            if (candidate != null)// användas för att kontrollera att användare inte läger till samma användare två gånger
             {
-                //om canditaten redan fins i valet
-                //ModelState.AddModelError(string.Empty, "The candidate already belongs to voting");
-                //ViewBag.Error = "The group already belongs to voting";
-                /*ViewBag.UserId = new SelectList(
-                                db.Users.OrderBy(u => u.FirstName)
-                                .ThenBy(u => u.LastName),
 
-                                "UserId",
-                                "FullName");*/
-                //return View(view);
                 TempData["Message"] = "(" + UserFullName + ") is already a candidate in this election";
-                //return RedirectToAction("_SearchAndAddCandidate", "Votings", new { id = view.VotingId });
-                //return Json(new { url = Url.Action("_SearchAndAddCandidate", new { id = VotingID }) });
-                //return RedirectToAction("_SearchAndAddCandidate", "Votings", new { id = view.VotingId });
+
                 return Json(new { url = Url.Action("Details", new { id = VotingID }) });
-                //return PartialView("_SearchAndAddCandidat", new { id = view.VotingId });
+
 
             }
 
             candidate = new Candidate
             {
-                UserId = view.UserId,
-                VotingId = view.VotingId,
+                UserId = UserID,
+                VotingId = VotingID,
             };
 
+            _electionRepository.AddCandidate(candidate);
 
-            db.Candidates.Add(candidate);
-            db.SaveChanges();
+            _electionRepository.Save();
+
 
             TempData["Message"] = "(" + UserFullName + ") is add to this election";
-            ///return PartialView("_SearchAndAddCandidat", new { id = view.VotingId });
-            //return RedirectToAction("_SearchAndAddCandidat", "Votings", new { id = view.VotingId });
-            //return Json(new { ok = true, url = Url.Action("Details", "Votings", new { id = view.VotingId }) });
+
             return Json(new { url = Url.Action("Details", new { id = VotingID }) });
-            /* ViewBag.UserId = new SelectList(
-                 db.Users.OrderBy(u => u.FirstName)
-                .ThenBy(u => u.LastName),
-                "UserId",
-                "FullName");*/
+
 
         }
 
@@ -864,12 +785,15 @@ namespace OnlineVoting.Controllers
         [Authorize(Roles = "Admin")]
         public ActionResult DeleteCandidate(int id)// tar bort kandidat från valet 
         {
-            var candidate = db.Candidates.Find(id);
+            var candidate = _electionRepository.GetCandidateById(id);
+
 
             if (candidate != null)
             {
-                db.Candidates.Remove(candidate);
-                db.SaveChanges();
+                _electionRepository.DeleteCandidate(candidate);
+
+                _electionRepository.Save();
+
             }
 
             return RedirectToAction(string.Format("Details/{0}", candidate.VotingId));
@@ -887,11 +811,12 @@ namespace OnlineVoting.Controllers
 
             if (string.IsNullOrEmpty(SearchText))
             {
-                ElectionList = db.Votings.Include(v => v.State).ToList();
+                ElectionList = _electionRepository.GetListOfAllElections();
+
             }
             else
             {
-                ElectionList = db.Votings.Where(x => x.Description.StartsWith(SearchText)).ToList();// söker efter förnamn man sökt på i DB för att visas i viewn 
+                ElectionList = _electionRepository.GetElectionByName(SearchText);// söker efter val namnet man sökt på i DB för att visas i viewn 
             }
 
             foreach (var Election in ElectionList)
@@ -899,7 +824,7 @@ namespace OnlineVoting.Controllers
                 User user = null;
                 if (Election.CandidateWinId != 0)
                 {
-                    user = db.Users.Find(Election.CandidateWinId);
+                    user = _userRepository.GetUserByUserId(Election.CandidateWinId);
                 }
 
                 views.Add(new VotingIndexView
@@ -923,16 +848,13 @@ namespace OnlineVoting.Controllers
 
 
             return PartialView("_ElectionInfo", views);
-            //return RedirectToAction(string.Format("Details/{0}", ViewBag.VotingId));
         }
 
         public JsonResult GetElectionSearch(String term)// funktion som används av autocomplete jquery i index view för sökning på val namn  
         {
             List<String> ElectionList;// skapar lista som kommer användas för att spara alla User från DB
 
-
-            ElectionList = db.Votings.Where(x => x.Description.StartsWith(term)).Select(y => y.Description).ToList();// söker efter förnamnet man sökt på i DB för att visas på autocomplete
-
+            ElectionList = _electionRepository.GetElectionByNameForAutocomplete(term);// söker efter val namnet man sökt på i DB för att visas på autocomplete
 
 
             return Json(ElectionList, JsonRequestBehavior.AllowGet);
@@ -971,42 +893,55 @@ namespace OnlineVoting.Controllers
 
             int SID = 0;
             int Syear = 0;
+            State state = new State();
+
 
             if (StateId != "" & SelectedYear != "" & SelectedMonths != "")
             {
                 SID = Int32.Parse(StateId);
                 Syear = Int32.Parse(SelectedYear);
 
-                ElectionList = db.Votings.Where(x => x.StateId == SID & x.DateTimeStart.Year == Syear & x.DateTimeStart.Month == MonthsNum).ToList();// söker efter förnamn man sökt på i DB för att visas i viewn 
+                state.StateId = SID;
+
+                ElectionList = _electionRepository.GetElectionByYearMonthsAndStateId(Syear, MonthsNum, state);// söker efter år, månade och status på valet i DB för att visas i viewn 
             }
             else if (StateId != "" & SelectedYear == "" & SelectedMonths == "")
             {
                 SID = Int32.Parse(StateId);
-                ElectionList = db.Votings.Where(x => x.StateId == SID).ToList();
+
+                state.StateId = SID;
+                ElectionList = _electionRepository.GetElectionByStateId(state);
+
             }
             else if (StateId == "" & SelectedYear != "" & SelectedMonths != "")
             {
                 Syear = Int32.Parse(SelectedYear);
-                ElectionList = db.Votings.Where(x => x.DateTimeStart.Year == Syear & x.DateTimeStart.Month == MonthsNum).ToList();
+                ElectionList = _electionRepository.GetElectionByYearandMonths(Syear, MonthsNum);
+
             }
             else if (StateId != "" & SelectedYear != "" & SelectedMonths == "")
             {
                 SID = Int32.Parse(StateId);
                 Syear = Int32.Parse(SelectedYear);
-                ElectionList = db.Votings.Where(x => x.StateId == SID & x.DateTimeStart.Year == Syear).ToList();
+                state.StateId = SID;
+                ElectionList = _electionRepository.GetElectionByYearAndStateId(Syear, state);
+
             }
             else if (StateId == "" & SelectedYear != "" & SelectedMonths == "")
             {
                 Syear = Int32.Parse(SelectedYear);
-                ElectionList = db.Votings.Where(x => x.DateTimeStart.Year == Syear).ToList();
+                ElectionList = _electionRepository.GetElectionByYear(Syear);
+
             }
             else if (StateId == "" & SelectedYear == "" & SelectedMonths != "")
             {
-                ElectionList = db.Votings.Where(x => x.DateTimeStart.Month == MonthsNum).ToList();
+                ElectionList = _electionRepository.GetElectionByMonths(MonthsNum);
+
             }
             else
             {
-                ElectionList = db.Votings.Include(v => v.State).ToList();
+                ElectionList = _electionRepository.GetListOfAllElections();
+
             }
 
             var views = new List<VotingIndexView>();
@@ -1016,7 +951,7 @@ namespace OnlineVoting.Controllers
                 User user = null;
                 if (Election.CandidateWinId != 0)
                 {
-                    user = db.Users.Find(Election.CandidateWinId);
+                    user = _userRepository.GetUserByUserId(Election.CandidateWinId);
                 }
 
                 views.Add(new VotingIndexView
@@ -1050,18 +985,22 @@ namespace OnlineVoting.Controllers
         [Authorize(Roles = "Admin")]
         public ActionResult Index()// visar index view meda alla valen för admin och om den är avslutad så visas vinare
         {
-            var votings = db.Votings.Include(v => v.State);
+            var votings = _electionRepository.GetListOfAllElections();
+
             var views = new List<VotingIndexView>();
-            var db2 = new OnlineVotingContext();
+
+
 
             var Yearlist = new List<string>();
+
             //visar info om valet och visar också vinare om vallet är slut förd 
             foreach (var voting in votings)
             {
                 User user = null;
                 if (voting.CandidateWinId != 0)
                 {
-                    user = db2.Users.Find(voting.CandidateWinId);
+                    user = _userRepository.GetUserByUserId(voting.CandidateWinId);
+
                 }
 
                 views.Add(new VotingIndexView
@@ -1098,11 +1037,7 @@ namespace OnlineVoting.Controllers
 
             ViewBag.SelectedYear = new SelectList(Yearlist);
 
-            ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion");
-
-            //var Monthslist = new List<String>();
-
-            //ViewBag.SelectedMonths = new SelectList(Monthslist);
+            ViewBag.StateId = new SelectList(_stateRepository.GetStateTb(), "StateId", "Descripcion");
 
 
             var Monthslist = new List<MonthsList>();
@@ -1123,7 +1058,8 @@ namespace OnlineVoting.Controllers
 
             int Year = selectedYear; //Int32.Parse(selectedYear);
 
-            var votings = db.Votings.Where(x => x.DateTimeStart.Year == Year).ToList();
+            var votings = _electionRepository.GetElectionByYear(Year);
+
 
             var MontsListsOfYear = new List<MonthsList>();
 
@@ -1157,14 +1093,9 @@ namespace OnlineVoting.Controllers
 
             }
 
-            //var sl = Monthslist.Select(s => new SelectListItem { Value = s }).ToList();
-
             TempData["List"] = MontsListsOfYear.OrderBy(s => s.Months).ToList();
 
 
-            //IEnumerable<int> months = db.yourTable().Where(x => x.Year == selectedYear).Select(x => x.Month);
-
-            //return Json(ViewBag.SelectedMonths, JsonRequestBehavior.AllowGet);
             return Json(MontsListsOfYear, JsonRequestBehavior.AllowGet);
         }
 
@@ -1178,42 +1109,42 @@ namespace OnlineVoting.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Voting voting = db.Votings.Find(id);
+
+            Voting voting = _electionRepository.GetElectionById(id.GetValueOrDefault());
+
             if (voting == null)
             {
                 return HttpNotFound();
             }
-      
-            var state = db.States.Find(voting.StateId);
+
+            var state = _stateRepository.GetStateById(voting.StateId);
+
 
             if ("Closed" != state.Descripcion)
             {
 
-            var view = new DetailsVotingView
-            {
-                Candidates = voting.Candidates.ToList(),
-                CandidateWinId = voting.CandidateWinId,
-                DateTimeEnd = voting.DateTimeEnd,
-                DateTimeStart = voting.DateTimeStart,
-                Description = voting.Description,
-                IsEnableBlankVote = voting.IsEnableBlankVote,
-                IsForAllUsers = voting.IsForAllUsers,
-                QuantityBlankVotes = voting.QuantityBlankVotes,
-                QuantityVotes = voting.QuantityVotes,
-                Remarks = voting.Remarks,
-                StateId = voting.StateId,
-                VotingId = voting.VotingId,
-            };
+                var view = new DetailsVotingView
+                {
+                    Candidates = voting.Candidates.ToList(),
+                    CandidateWinId = voting.CandidateWinId,
+                    DateTimeEnd = voting.DateTimeEnd,
+                    DateTimeStart = voting.DateTimeStart,
+                    Description = voting.Description,
+                    IsEnableBlankVote = voting.IsEnableBlankVote,
+                    IsForAllUsers = voting.IsForAllUsers,
+                    QuantityBlankVotes = voting.QuantityBlankVotes,
+                    QuantityVotes = voting.QuantityVotes,
+                    Remarks = voting.Remarks,
+                    StateId = voting.StateId,
+                    VotingId = voting.VotingId,
+                };
 
 
-            
 
-            ViewBag.StateDescripcion = state.Descripcion;
 
-            //testar-------------
-            ViewBag.UserModel = db.Votings.ToList();
-                //-------------------
-            return View(view);
+                ViewBag.StateDescripcion = state.Descripcion;
+
+                return View(view);
             }
             else
             {
@@ -1227,17 +1158,20 @@ namespace OnlineVoting.Controllers
         [Authorize(Roles = "Admin")]
         public ActionResult Create()// visar view där man skapar valet 
         {
-            var S1 = db.States.ToList();
+            var S1 = _stateRepository.GetAllState();
+
 
             foreach (var item in S1)// gör så att drop down listan som visas i skapar viewn får Open state vald 
             {
 
                 if ("Open" == item.Descripcion)
                 {
-                    ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion", item.StateId);
+                    ViewBag.StateId = new SelectList(_stateRepository.GetStateTb(), "StateId", "Descripcion", item.StateId);
+
                 }
 
             }
+
             //DateTime
             var view = new VotingView
             {
@@ -1274,17 +1208,17 @@ namespace OnlineVoting.Controllers
                 };
 
 
+                _electionRepository.AddElection(voting);
 
-                db.Votings.Add(voting);
-                db.SaveChanges();
+                _electionRepository.Save();
 
-                //var c = db.Votings.FirstOrDefault(s => s.VotingId = voting.VotingId);
 
-                //return RedirectToAction("Index");
+
                 return RedirectToAction("Details", new { id = voting.VotingId });
             }
 
-            ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion", view.StateId);
+            ViewBag.StateId = new SelectList(_stateRepository.GetStateTb(), "StateId", "Descripcion", view.StateId);
+
 
             return View(view);
         }
@@ -1299,14 +1233,16 @@ namespace OnlineVoting.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
 
-            var voting = db.Votings.Find(id);
+            var voting = _electionRepository.GetElectionById(id.GetValueOrDefault());
+
 
             if (voting == null)
             {
                 return HttpNotFound();
             }
 
-            var state = db.States.Find(voting.StateId);
+            var state = _stateRepository.GetStateById(voting.StateId);
+
 
             if ("Open" == state.Descripcion)// används för att kontrollera om ett val är på gong eller avslutad, är ett val avslutat så ska man inte kunna ändra något i valt, detta är en funktion som lags till för att bevara valets integritet
             {
@@ -1314,20 +1250,12 @@ namespace OnlineVoting.Controllers
                 var FixTimeStart = voting.DateTimeStart.ToString("HH:mm");//får tiden från datetime objekt 
                 var FixTimeEnd = voting.DateTimeEnd.ToString("HH:mm");// får tiden från datetime objekt 
 
-                var V1 = db.Votings.AsNoTracking().Where(p => p.VotingId == voting.VotingId).FirstOrDefault();
+                var V1 = _electionRepository.GetElectionByIdNoTracking(voting.VotingId);
+
 
                 var view = new VotingView
                 {
-                    /* DateEnd = voting.DateTimeEnd,
-                     DateStart = voting.DateTimeStart,
-                     Description = voting.Description,
-                     IsEnabledBlankVote = voting.IsEnableBlankVote,
-                     IsForAllUsers = voting.IsForAllUsers,
-                     Remarks = voting.Remarks,
-                     StateId = voting.StateId,
-                     TimeEnd = voting.DateTimeEnd,
-                     TimeStart = voting.DateTimeStart,
-                     VotingId = voting.VotingId,*/
+
 
                     CandidateWinId = voting.CandidateWinId,
                     DateEnd = voting.DateTimeEnd.Date,
@@ -1345,7 +1273,8 @@ namespace OnlineVoting.Controllers
 
                 };
 
-                ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion", voting.StateId);
+
+                ViewBag.StateId = new SelectList(_stateRepository.GetStateTb(), "StateId", "Descripcion", voting.StateId);
 
                 return View(view);
             }
@@ -1363,10 +1292,12 @@ namespace OnlineVoting.Controllers
         public ActionResult Edit(VotingView view)// postar ändringarna man gjort i valets info
         {
 
-            //Voting voting1 = db.Votings.Find(view.VotingId);
-            // används för att inte Entity Framework inte ska binda sig till state modelen så att den längre ner kan updateras utan problem
-            var V1 = db.Votings.AsNoTracking().Where(p => p.VotingId == view.VotingId).FirstOrDefault();
-            var state = db.States.Find(V1.StateId);
+
+            var V1 = _electionRepository.GetElectionByIdNoTracking(view.VotingId);
+
+
+            var state = _stateRepository.GetStateById(V1.StateId);
+
 
             // används här i den här post funktionen för att hindra post attacker som kan göras genom URL, man postar ändrignar som int ska gå att göras
             if ("Open" == state.Descripcion & V1.QuantityVotes == view.QuantityVotes & V1.QuantityBlankVotes == view.QuantityBlankVotes & V1.CandidateWinId == view.CandidateWinId)// används för att kontrollera om ett val är på gong eller avslutad, är ett val avslutat så ska man inte kunna ändra något i valt, detta är en funktion som lags till för att bevara valets integritet
@@ -1376,21 +1307,11 @@ namespace OnlineVoting.Controllers
 
                     TimeSpan timeOfEnd = view.TimeEnd.TimeOfDay;// kommer användas för att längre ner slå ihop tid och datume 
                     TimeSpan timeOfStart = view.TimeStart.TimeOfDay;// kommer användas för att längre ner slå ihop tid och datume 
+
                     //DateTime
                     var voting = new Voting
                     {
-                        /*DateTimeEnd = view.DateEnd
-                                      .AddHours(view.TimeEnd.Hour)
-                                      .AddMinutes(view.TimeEnd.Minute),
-                        DateTimeStart = view.DateStart
-                                      .AddHours(view.TimeStart.Hour)
-                                      .AddMinutes(view.TimeStart.Minute),
-                        Description = view.Description,
-                        IsEnableBlankVote = view.IsEnabledBlankVote,
-                        IsForAllUsers = view.IsForAllUsers,
-                        Remarks = view.Remarks,
-                        StateId = view.StateId,
-                        VotingId = view.VotingId,*/
+
 
                         CandidateWinId = view.CandidateWinId,
                         DateTimeEnd = view.DateEnd.Add(timeOfEnd),// slåtr ihop tid i datetime objekt 
@@ -1406,12 +1327,14 @@ namespace OnlineVoting.Controllers
 
                     };
 
-                    db.Entry(voting).State = EntityState.Modified;
-                    db.SaveChanges();
+                    _electionRepository.UpdateElection(voting);
+                    _electionRepository.Save();
+
                     return RedirectToAction("Details", new { id = view.VotingId });
                 }
 
-                ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion", view.StateId);
+                ViewBag.StateId = new SelectList(_stateRepository.GetStateTb(), "StateId", "Descripcion", view.StateId);
+
                 return View(view);
 
             }
@@ -1432,14 +1355,16 @@ namespace OnlineVoting.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
 
-            var voting = db.Votings.Find(id);
+            var voting = _electionRepository.GetElectionById(id.GetValueOrDefault());
+
 
             if (voting == null)
             {
                 return HttpNotFound();
             }
 
-            var state = db.States.Find(voting.StateId);
+            var state = _stateRepository.GetStateById(voting.StateId);
+
 
             if ("Open" == state.Descripcion)// används för att kontrollera om ett val är på gong eller avslutad, är ett val avslutat så ska man inte kunna ändra något i valt, detta är en funktion som lags till för att bevara valets integritet
             {
@@ -1447,20 +1372,11 @@ namespace OnlineVoting.Controllers
                 var FixTimeStart = voting.DateTimeStart.ToString("HH:mm");//får tiden från datetime objekt 
                 var FixTimeEnd = voting.DateTimeEnd.ToString("HH:mm");// får tiden från datetime objekt 
 
-                var V1 = db.Votings.AsNoTracking().Where(p => p.VotingId == voting.VotingId).FirstOrDefault();
+                var V1 = _electionRepository.GetElectionByIdNoTracking(voting.VotingId);
+
 
                 var view = new VotingView
                 {
-                    /* DateEnd = voting.DateTimeEnd,
-                     DateStart = voting.DateTimeStart,
-                     Description = voting.Description,
-                     IsEnabledBlankVote = voting.IsEnableBlankVote,
-                     IsForAllUsers = voting.IsForAllUsers,
-                     Remarks = voting.Remarks,
-                     StateId = voting.StateId,
-                     TimeEnd = voting.DateTimeEnd,
-                     TimeStart = voting.DateTimeStart,
-                     VotingId = voting.VotingId,*/
 
                     CandidateWinId = voting.CandidateWinId,
                     DateEnd = voting.DateTimeEnd.Date,
@@ -1478,7 +1394,7 @@ namespace OnlineVoting.Controllers
 
                 };
 
-                ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion", voting.StateId);
+                ViewBag.StateId = new SelectList(_stateRepository.GetStateTb(), "StateId", "Descripcion", voting.StateId);
 
                 return PartialView("_EditElectionInfo", view);
             }
@@ -1492,14 +1408,16 @@ namespace OnlineVoting.Controllers
         }
 
         [ValidateAntiForgeryToken]
-       [HttpPost]
+        [HttpPost]
         public ActionResult _EditElectionInfo(VotingView view)// postar ändringarna man gjort i valets info // VotingView view
         {
             ViewBag.VotingId = view.VotingId;
-            //Voting voting1 = db.Votings.Find(view.VotingId);
-            // används för att inte Entity Framework inte ska binda sig till state modelen så att den längre ner kan updateras utan problem
-            var V1 = db.Votings.AsNoTracking().Where(p => p.VotingId == view.VotingId).FirstOrDefault();
-            var state = db.States.Find(V1.StateId);
+
+            // NoTracking används för att inte Entity Framework inte ska binda sig till state modelen så att den längre ner kan updateras utan problem
+            var V1 = _electionRepository.GetElectionByIdNoTracking(view.VotingId);
+
+            var state = _stateRepository.GetStateById(V1.StateId);
+
 
             // används här i den här post funktionen för att hindra post attacker som kan göras genom URL, man postar ändrignar som int ska gå att göras
             if ("Open" == state.Descripcion & V1.QuantityVotes == view.QuantityVotes & V1.QuantityBlankVotes == view.QuantityBlankVotes & V1.CandidateWinId == view.CandidateWinId)// används för att kontrollera om ett val är på gong eller avslutad, är ett val avslutat så ska man inte kunna ändra något i valt, detta är en funktion som lags till för att bevara valets integritet
@@ -1509,21 +1427,10 @@ namespace OnlineVoting.Controllers
 
                     TimeSpan timeOfEnd = view.TimeEnd.TimeOfDay;// kommer användas för att längre ner slå ihop tid och datume 
                     TimeSpan timeOfStart = view.TimeStart.TimeOfDay;// kommer användas för att längre ner slå ihop tid och datume 
+
                     //DateTime
                     var voting = new Voting
                     {
-                        /*DateTimeEnd = view.DateEnd
-                                      .AddHours(view.TimeEnd.Hour)
-                                      .AddMinutes(view.TimeEnd.Minute),
-                        DateTimeStart = view.DateStart
-                                      .AddHours(view.TimeStart.Hour)
-                                      .AddMinutes(view.TimeStart.Minute),
-                        Description = view.Description,
-                        IsEnableBlankVote = view.IsEnabledBlankVote,
-                        IsForAllUsers = view.IsForAllUsers,
-                        Remarks = view.Remarks,
-                        StateId = view.StateId,
-                        VotingId = view.VotingId,*/
 
                         CandidateWinId = view.CandidateWinId,
                         DateTimeEnd = view.DateEnd.Add(timeOfEnd),// slåtr ihop tid i datetime objekt 
@@ -1539,11 +1446,10 @@ namespace OnlineVoting.Controllers
 
                     };
 
-                    db.Entry(voting).State = EntityState.Modified;
-                    db.SaveChanges();
+                    _electionRepository.UpdateElection(voting);
+                    _electionRepository.Save();
 
-
-                    //--------------------------------- det ska flytas ut till en server lager 
+                    //--------------------------------- det ska flytas ut till egen ActionResult metod
 
 
                     List<Voting> ElectionList;
@@ -1552,14 +1458,16 @@ namespace OnlineVoting.Controllers
 
                     int ID = view.VotingId;
 
-                    ElectionList = db.Votings.Where(x => x.VotingId == ID).ToList();
+                    ElectionList = _electionRepository.GetListOfAllElectionsById(ID);
+
 
                     foreach (var Election in ElectionList)
                     {
                         User user = null;
                         if (Election.CandidateWinId != 0)
                         {
-                            user = db.Users.Find(Election.CandidateWinId);
+                            user = _userRepository.GetUserByUserId(Election.CandidateWinId);
+
                         }
 
                         views.Add(new VotingIndexView
@@ -1588,7 +1496,7 @@ namespace OnlineVoting.Controllers
 
                 }
 
-                ViewBag.StateId = new SelectList(db.States, "StateId", "Descripcion", view.StateId);
+                ViewBag.StateId = new SelectList(_stateRepository.GetStateTb(), "StateId", "Descripcion", view.StateId);
 
                 return PartialView("_EditElectionInfo", view);
 
@@ -1596,10 +1504,9 @@ namespace OnlineVoting.Controllers
             else
             {
                 TempData["Message"] = "You tried to use the URL to post Edit (" + V1.Description + "), This election is finished and can not be edited anymore!";
-                //return RedirectToAction("Index", "votings");
-                //return Json(new { url = Url.Action("Index", new { id = view.VotingId }) });
-                return Json(new {url = Url.Action("Index", "Votings")});
-               
+
+                return Json(new { url = Url.Action("Index", "Votings") });
+
             }
 
         }
@@ -1614,7 +1521,9 @@ namespace OnlineVoting.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Voting voting = db.Votings.Find(id);
+            Voting voting = _electionRepository.GetElectionById(id.GetValueOrDefault());
+
+
             if (voting == null)
             {
                 return HttpNotFound();
@@ -1626,13 +1535,16 @@ namespace OnlineVoting.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)// postar att man tar bort valet 
         {
-            Voting voting = db.Votings.Find(id);
-            db.Votings.Remove(voting);
+            Voting voting = _electionRepository.GetElectionById(id);
+
+            _electionRepository.DeleteElection(voting);
+
 
 
             try
             {
-                db.SaveChanges();
+                _electionRepository.Save();
+
             }
 
             catch (Exception ex)
@@ -1656,13 +1568,5 @@ namespace OnlineVoting.Controllers
             return RedirectToAction("Index");
         }
 
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                db.Dispose();
-            }
-            base.Dispose(disposing);
-        }
     }
 }

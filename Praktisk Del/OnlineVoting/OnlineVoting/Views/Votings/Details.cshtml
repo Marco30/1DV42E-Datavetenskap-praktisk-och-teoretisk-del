@@ -178,11 +178,16 @@
           var onSuccess = function doIt(result) {
                 if (result.url) {
                     window.location.href = result.url;
+
+                    //hittar om en div med ett vist id har text inuti 
+
+
                 }
             };
 
             // kallar på GetNameSearch funktion som finns i VotingsController, det använda för autocomplete
             $(function () {
+
 
                 $("#SearchText").autocomplete({
                     source: '@Url.Action("GetNameSearch")'

@@ -39,7 +39,7 @@ namespace OnlineVoting
 
                 user = new User
                 {
-                    Adress = "Terapivägen 14C",
+                    Adress = "Terapivägen 16E",
                     FirstName = "Marco",
                     LastName = "Villegas",
                     Phone = "0706880589",
