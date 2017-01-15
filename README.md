@@ -10,12 +10,12 @@ du i dokument mappen som finns här samt att koden är kommenterad.  
 
 ## Online
 
-systemet hittar du online här: http://vhost9.lnu.se:20081/1dv430/mv222fp
+systemet hittar man online här: http://vhost9.lnu.se:20081/1dv430/mv222fp
 
 Användarnamn: admin 
 Lösen: admin123
 
-Redovisnings av min teoretisk uppsats hittar du här:https://youtu.be/PFhpJbLoOqM
+Redovisnings av min teoretisk uppsats hittar man här:https://youtu.be/PFhpJbLoOqM
 
 
 
