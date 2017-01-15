@@ -2,7 +2,7 @@
 
 ##Instruktioner 
 
-för att köra systemet så är det bara att lada hem och öppnas
+för att köra systemet så är det bara att lada hem och öppna
 programmet i Visual studios, databasen skapas automatiskt i din lokala databas.
 
 mer information om DB och arbetet runt systemet hittar
