@@ -15,7 +15,7 @@ systemet hittar man online här: http://vhost9.lnu.se:20081/1dv430/mv222fp
 Användarnamn: admin 
 Lösen: admin123
 
-Redovisnings av min teoretisk uppsats hittar man här:https://youtu.be/PFhpJbLoOqM
+Redovisning av min teoretisk uppsats hittar man här:https://youtu.be/PFhpJbLoOqM
 
 
 
