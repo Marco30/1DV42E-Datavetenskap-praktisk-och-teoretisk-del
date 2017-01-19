@@ -2,6 +2,8 @@
 
 ##Instruktioner 
 
+CSS systemet använder är just nu bara optimerad för följande två webbläsare, firefox och Safari
+
 för att köra systemet så är det bara att lada hem och öppna
 programmet i Visual studios, databasen skapas automatiskt i din lokala databas.
 
