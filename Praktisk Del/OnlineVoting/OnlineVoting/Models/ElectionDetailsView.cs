@@ -10,7 +10,7 @@ namespace OnlineVoting.Models
     {
         //Model för at visa detaljerad info i detail view 
 
-        public int VotingId { get; set; }
+        public int ElectionId { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
         [StringLength(100, ErrorMessage = "The field {0} can contain maximum {1} and minimum {2} characters", MinimumLength = 10)]

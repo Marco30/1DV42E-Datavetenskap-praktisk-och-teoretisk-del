@@ -225,7 +225,7 @@
     <Compile Include="Models\UserSettingsView.cs" />
     <Compile Include="Models\UserCreateEditView.cs" />
     <Compile Include="Models\Election.cs" />
-    <Compile Include="Models\ElectionDetail.cs" />
+    <Compile Include="Models\ElectionVotingDetail.cs" />
     <Compile Include="Models\ElectionIndexView.cs" />
     <Compile Include="Models\ElectionCreateEditView.cs" />
     <Compile Include="Models\ElectionVotingView.cs" />
@@ -276,6 +276,7 @@
     <Content Include="ApplicationInsights.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Include="Properties\PublishProfiles\OnlineVoting.pubxml" />
     <None Include="Scripts\jquery-1.10.2.intellisense.js" />
     <Content Include="Scripts\Focus,TimeAndDate.js" />
     <Content Include="Scripts\jquery-1.10.2.js" />

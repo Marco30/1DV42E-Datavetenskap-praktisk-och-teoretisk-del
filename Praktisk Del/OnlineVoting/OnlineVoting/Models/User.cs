@@ -56,6 +56,6 @@ namespace OnlineVoting.Models
 
         [XmlIgnore]
         [JsonIgnore]
-        public virtual ICollection<ElectionDetail> ElectionDetails { get; set; }
+        public virtual ICollection<ElectionVotingDetail> ElectionVotingDetails { get; set; }
     }
 }

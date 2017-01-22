@@ -30,7 +30,7 @@ namespace OnlineVoting.Models
 
         public DbSet<Candidate> Candidates { get; set; }
 
-        public DbSet<ElectionDetail> ElectionDetails { get; set; }
+        public DbSet<ElectionVotingDetail> ElectionVotingDetails { get; set; }
 
 
     }

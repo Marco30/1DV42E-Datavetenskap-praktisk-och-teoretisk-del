@@ -12,7 +12,7 @@ namespace OnlineVoting.Models
         [Key]
         public int CandidateId { get; set; }
 
-        public int VotingId { get; set; }
+        public int ElectionId { get; set; }
 
         public int UserId { get; set; }
 
@@ -21,6 +21,6 @@ namespace OnlineVoting.Models
         public virtual Election Voting { get; set; }
         public virtual User User { get; set; }
 
-        public virtual ICollection<ElectionDetail> VotingDetails { get; set; }
+        public virtual ICollection<ElectionVotingDetail> ElectionVotingDetails { get; set; }
     }
 }

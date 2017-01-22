@@ -7,21 +7,21 @@ using System.Threading.Tasks;
 
 namespace OnlineVoting.Models
 {
-    public class ElectionDetail
+    public class ElectionVotingDetail
     {
         // modelr för att visa detaljerade info om valet i Detail view
         [Key]
-        public int VotingDetailId { get; set; }
+        public int ElectionVotingDetailId { get; set; }
 
         public DateTime DateTime { get; set; }
 
-        public int VotingID { get; set; }
+        public int ElectionId { get; set; }
 
         public int UserId { get; set; }
 
         public int CandidateId { get; set; }
 
-        public virtual Election Voting { get; set; }
+        public virtual Election Election { get; set; }
 
         public virtual Candidate Candidate { get; set; }
     }

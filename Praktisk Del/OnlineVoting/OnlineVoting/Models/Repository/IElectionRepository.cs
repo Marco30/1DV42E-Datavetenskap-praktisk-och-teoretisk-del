@@ -20,7 +20,7 @@ namespace OnlineVoting.Models.Repository
 
         void Save();
         DbContextTransaction Transaction();
-        void VotingDetailAdd(ElectionDetail votingDetail);
+        void VotingDetailAdd(ElectionVotingDetail votingDetail);
 
         Election GetElectionById(int ElectionID);
         Candidate GetListOfAllElectionCandidates(int ElectionID);
@@ -39,7 +39,7 @@ namespace OnlineVoting.Models.Repository
         List<string> GetElectionByNameForAutocomplete(string SearchText);
         List<Election> GetElectionByName(string SearchText);
         List<Election> GetListOfElectionIfOpen(State state);
-        ElectionDetail GetIfUserAlreadyVotedInElection(int VotingId, int UserId);
+        ElectionVotingDetail GetIfUserAlreadyVotedInElection(int VotingId, int UserId);
         List<Election> GetElectionByStateId(State state);
         List<Election> GetElectionByYear(int year);
         List<Election> GetElectionByMonths(int MonthsNum);

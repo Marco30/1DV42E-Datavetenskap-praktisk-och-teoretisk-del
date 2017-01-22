@@ -40,14 +40,14 @@ namespace OnlineVoting.Models.Repository
 
         public Election GetElectionByIdNoTracking(int ElectionId)// används för att inte Entity Framework ska binda data till en state model så att den kan användas utan att påvärka annat data av samma model typ som används i sammas metod 
         {
-            var Election = db.Elections.AsNoTracking().Where(p => p.VotingId == ElectionId).FirstOrDefault();
+            var Election = db.Elections.AsNoTracking().Where(p => p.ElectionId == ElectionId).FirstOrDefault();
             return Election;
         }
        
 
-        public void VotingDetailAdd(ElectionDetail votingDetail)// läger till votingDetails til DB
+        public void VotingDetailAdd(ElectionVotingDetail votingDetail)// läger till votingDetails til DB
         {
-            db.ElectionDetails.Add(votingDetail);
+            db.ElectionVotingDetails.Add(votingDetail);
         }
 
         public Election GetElectionById(int ElectionID)// hämtar val ut i från ID 
@@ -60,7 +60,7 @@ namespace OnlineVoting.Models.Repository
 
         public List<Election> GetListOfAllElectionsById(int id)
         {
-            var ElectionsList = db.Elections.Where(x => x.VotingId == id).Include(v => v.State).ToList();
+            var ElectionsList = db.Elections.Where(x => x.ElectionId == id).Include(v => v.State).ToList();
             return ElectionsList;
 
         }
@@ -75,7 +75,7 @@ namespace OnlineVoting.Models.Repository
         public Candidate GetListOfAllElectionCandidates(int ElectionID)// hämtar hel kandidat lista ut i från ID 
         {
 
-            var Candidate = db.Candidates.Where(c => c.VotingId == ElectionID).OrderByDescending(c => c.QuantityVotes).FirstOrDefault();
+            var Candidate = db.Candidates.Where(c => c.ElectionId == ElectionID).OrderByDescending(c => c.QuantityVotes).FirstOrDefault();
 
             return Candidate;
         }
@@ -90,7 +90,7 @@ namespace OnlineVoting.Models.Repository
         public Candidate GetCandidateByElectionIdAndUserId(int ElectionID, int UserId)// hämtar kandidat ut i från id 
         {
             var Candidate = db.Candidates
-                .Where(c => c.VotingId == ElectionID &&
+                .Where(c => c.ElectionId == ElectionID &&
                 c.UserId == UserId)
                 .FirstOrDefault();
                           
@@ -134,10 +134,10 @@ namespace OnlineVoting.Models.Repository
             return votings;
         }
 
-        public ElectionDetail GetIfUserAlreadyVotedInElection(int VotingId, int UserId)// använda för att kontrollera om en användare redan röstat 
+        public ElectionVotingDetail GetIfUserAlreadyVotedInElection(int VotingId, int UserId)// använda för att kontrollera om en användare redan röstat 
         {
-            var votingDetail = db.ElectionDetails.
-                Where(vd => vd.VotingID == VotingId &&
+            var votingDetail = db.ElectionVotingDetails.
+                Where(vd => vd.ElectionId == VotingId &&
                 vd.UserId == UserId).FirstOrDefault();
 
             return votingDetail;
@@ -149,13 +149,13 @@ namespace OnlineVoting.Models.Repository
             var connectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
 
             //@ from not concatenate
-            var sql = @"SELECT  Votings.VotingId, Votings.Description AS Voting, States.Descripcion AS State, 
+            var sql = @"SELECT  Elections.ElectionId, Elections.Description AS Election, States.Descripcion AS State, 
                                 Users.FirstName + ' ' + Users.LastName AS Candidate, Candidates.QuantityVotes
                          FROM   Candidates INNER JOIN
                                 Users ON Candidates.UserId = Users.UserId INNER JOIN
-                                Votings ON Candidates.VotingId = Votings.VotingId INNER JOIN
-                                States ON Votings.StateId = States.StateId
-                          WHERE Votings.VotingId =" + ElectionID + " ORDER BY Candidates.QuantityVotes DESC";
+                                Elections ON Candidates.ElectionId = Elections.ElectionId INNER JOIN
+                                States ON Elections.StateId = States.StateId
+                          WHERE Elections.ElectionId =" + ElectionID + " ORDER BY Candidates.QuantityVotes DESC";
 
             // Skapar och initierar ett anslutningsobjekt.
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -175,8 +175,8 @@ namespace OnlineVoting.Models.Repository
                     using (var reader = command.ExecuteReader())
                     {
                         // Tar reda på vilket index de olika kolumnerna har.
-                        var VotingID = reader.GetOrdinal("VotingID");
-                        var Electionname = reader.GetOrdinal("Voting");
+                        var ElectionId = reader.GetOrdinal("ElectionId");
+                        var Electionname = reader.GetOrdinal("Election");
                         var State = reader.GetOrdinal("State");
                         var Candidate = reader.GetOrdinal("Candidate");
                         var QuantityVotest = reader.GetOrdinal("QuantityVotes");
@@ -188,7 +188,7 @@ namespace OnlineVoting.Models.Repository
                             // Hämtar ut datat för en post.
                             Rank.Add(new ElectionRankView
                             {
-                                VotingID = reader.GetInt32(VotingID),
+                                ElectionId = reader.GetInt32(ElectionId),
                                 Electionname = reader.GetString(Electionname),
                                 State = reader.GetString(State),
                                 Candidate = reader.GetString(Candidate),

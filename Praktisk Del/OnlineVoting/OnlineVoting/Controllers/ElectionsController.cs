@@ -40,7 +40,7 @@ namespace OnlineVoting.Controllers
 
             if (voting != null)
             {
-                var candidate = _electionRepository.GetListOfAllElectionCandidates(voting.VotingId);
+                var candidate = _electionRepository.GetListOfAllElectionCandidates(voting.ElectionId);
 
 
                 if (candidate != null)
@@ -73,10 +73,10 @@ namespace OnlineVoting.Controllers
 
                 return View(Rank);
             }
-            catch// det körs när ShowResultsOfElectionById() misslyckats, vilket betyder att det är något fel i DB eller att ingen röstat änu och där med finns ingen data
+            catch// det körs när ShowResultsOfElectionById() misslyckats, vilket betyder att det är något fel i DB eller att det finns inga kandidater och där med finns ingen data
             {
                 var election = _electionRepository.GetElectionById(id);
-                TempData["Message"] = "No one has voted yet on this election (" + election.Description + ")";
+                TempData["Message"] = "There are no candidates in this election (" + election.Description + ")";
                 return Redirect(ControllerContext.HttpContext.Request.UrlReferrer.T‌​oString());
             }
            
@@ -117,7 +117,7 @@ namespace OnlineVoting.Controllers
                     Remarks = voting.Remarks,
                     StateId = voting.StateId,
                     State = voting.State,
-                    VotingId = voting.VotingId,
+                    ElectionId = voting.ElectionId,
                     Winner = user,
 
                 });
@@ -190,7 +190,7 @@ namespace OnlineVoting.Controllers
                     Remarks = Election.Remarks,
                     StateId = Election.StateId,
                     State = Election.State,
-                    VotingId = Election.VotingId,
+                    ElectionId = Election.ElectionId,
                     Winner = user,
 
                 });
@@ -292,7 +292,7 @@ namespace OnlineVoting.Controllers
                     Remarks = Election.Remarks,
                     StateId = Election.StateId,
                     State = Election.State,
-                    VotingId = Election.VotingId,
+                    ElectionId = Election.ElectionId,
                     Winner = user,
 
                 });
@@ -359,7 +359,7 @@ namespace OnlineVoting.Controllers
 
 
         [Authorize(Roles = "User")]
-        public ActionResult VoteForCandidate(int candidateId, int votingId)// röstnings funktion, används för att rösta 
+        public ActionResult VoteForCandidate(int candidateId, int ElectionId)// röstnings funktion, används för att rösta 
         {
             // validering av anvädnare 
             var user = _userRepository.GetUserByUserEmail(this.User.Identity.Name);
@@ -377,36 +377,36 @@ namespace OnlineVoting.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            var voting = _electionRepository.GetElectionById(votingId);
+            var election = _electionRepository.GetElectionById(ElectionId);
 
 
-            if (voting == null)
+            if (election == null)
             {
                 return RedirectToAction("Index", "Home");
             }
 
             //kör röstnings funktionen 
-            if (this.VoteCandidate(user, candidate, voting))
+            if (this.VoteCandidate(user, candidate, election))
             {
                 TempData["Message"] = "Success,You have voted!";
 
-                return RedirectToAction("MyVotings");
+                return RedirectToAction("ElectionsForUsers");
             }
 
             return RedirectToAction("Index", "Home");
         }
 
-        private bool VoteCandidate(Models.User user, Candidate candidate, Election voting) // röstnings funktion 
+        private bool VoteCandidate(Models.User user, Candidate candidate, Election election) // röstnings funktion 
         {
 
             using (var transaction = _electionRepository.Transaction())// kontakt med DB och transaction anbvänds i MVC för att kunna läga till data i flera tabeler 
             {
-                var votingDetail = new ElectionDetail
+                var votingDetail = new ElectionVotingDetail
                 {
                     CandidateId = candidate.CandidateId,
                     DateTime = DateTime.Now,
                     UserId = user.UserId,
-                    VotingID = voting.VotingId,
+                    ElectionId = election.ElectionId,
                 };
 
 
@@ -417,9 +417,9 @@ namespace OnlineVoting.Controllers
 
                 _electionRepository.UpdateCandidate(candidate);// läger till röst i DB
 
-                voting.QuantityVotes++;
+                election.QuantityVotes++;
 
-                _electionRepository.UpdateElection(voting);
+                _electionRepository.UpdateElection(election);
 
                 //sparar data i DB
                 try
@@ -440,7 +440,7 @@ namespace OnlineVoting.Controllers
         //---------------------------------------------------- Testar Blankröst  
 
         [Authorize(Roles = "User")]
-        public ActionResult VoteForBlankCandidate(int candidateId, int votingId)// röstnings funktion, validerign av användare för få möjlighet att rösta blankt 
+        public ActionResult VoteForBlankCandidate(int candidateId, int ElectionId)// röstnings funktion, validerign av användare för få möjlighet att rösta blankt 
         {
 
             // validering av anvädnare 
@@ -459,45 +459,45 @@ namespace OnlineVoting.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            var voting = _electionRepository.GetElectionById(votingId);
+            var election = _electionRepository.GetElectionById(ElectionId);
 
 
-            if (voting == null)
+            if (election == null)
             {
                 return RedirectToAction("Index", "Home");
             }
 
             //validering om man inte röstat så kommer man hitt 
-            if (this.VoteBlank(user, candidate, voting))
+            if (this.VoteBlank(user, candidate, election))
             {
                 TempData["Message"] = "Success,You have voted!";// meddelar att man röstat 
 
-                return RedirectToAction("MyVotings");
+                return RedirectToAction("ElectionsForUsers");
             }
 
             return RedirectToAction("Index", "Home");
         }
 
-        private bool VoteBlank(Models.User user, Candidate candidate, Election voting) // röstnings funktion för att rösta blankt 
+        private bool VoteBlank(Models.User user, Candidate candidate, Election election) // röstnings funktion för att rösta blankt 
         {
 
             using (var transaction = _electionRepository.Transaction())// kontakt med DB och transaction anbvänds i MVC för att kunna läga till data i flera tabeler 
             {
-                var votingDetail = new ElectionDetail
+                var votingDetail = new ElectionVotingDetail
                 {
                     CandidateId = candidate.CandidateId,
                     DateTime = DateTime.Now,
                     UserId = user.UserId,
-                    VotingID = voting.VotingId,
+                    ElectionId = election.ElectionId,
                 };
 
                 _electionRepository.VotingDetailAdd(votingDetail);
 
-                voting.QuantityVotes++;
+                election.QuantityVotes++;
 
-                voting.QuantityBlankVotes++;
+                election.QuantityBlankVotes++;
 
-                _electionRepository.UpdateElection(voting);
+                _electionRepository.UpdateElection(election);
 
                 //sparar data i DB
                 try
@@ -518,9 +518,9 @@ namespace OnlineVoting.Controllers
         //----------------------------------------------------  
 
         [Authorize(Roles = "User")]
-        public ActionResult Vote(int votingId)// visar röstnigns Viewn för användar som är inlogad som User
+        public ActionResult Vote(int ElectionId)// visar röstnigns Viewn för användar som är inlogad som User
         {
-            var voting = _electionRepository.GetElectionById(votingId);
+            var voting = _electionRepository.GetElectionById(ElectionId);
 
             var view = new ElectionVotingView
             {
@@ -532,7 +532,7 @@ namespace OnlineVoting.Controllers
                 IsForAllUsers = voting.IsForAllUsers,
                 MyCandidate = voting.Candidates.ToList(),
                 Remarks = voting.Remarks,
-                VotingId = voting.VotingId,
+                ElectionId = voting.ElectionId,
             };
 
             ViewBag.IsEnableBlankVote = voting.IsEnableBlankVote;
@@ -570,7 +570,7 @@ namespace OnlineVoting.Controllers
             {
 
 
-                var votingDetail = _electionRepository.GetIfUserAlreadyVotedInElection(voting.VotingId, user.UserId);
+                var votingDetail = _electionRepository.GetIfUserAlreadyVotedInElection(voting.ElectionId, user.UserId);
 
 
 
@@ -658,7 +658,7 @@ namespace OnlineVoting.Controllers
 
 
 
-            ViewBag.VotingId = id;
+            ViewBag.ElectionId = id;
 
             if (TempData["Message"] != null)
             {
@@ -751,12 +751,12 @@ namespace OnlineVoting.Controllers
 
         //Post AddCandidate
         [HttpPost]
-        public ActionResult MakeUserToCandidate(int UserID, int VotingID, string UserFullName)// postar användare man valt till kandidat
+        public ActionResult MakeUserToCandidate(int UserID, int ElectionId, string UserFullName)// postar användare man valt till kandidat
         {
 
 
             //så man inte lägger inte samma kandidat två gånger 
-            var candidate = _electionRepository.GetCandidateByElectionIdAndUserId(VotingID, UserID);
+            var candidate = _electionRepository.GetCandidateByElectionIdAndUserId(ElectionId, UserID);
 
 
 
@@ -765,7 +765,7 @@ namespace OnlineVoting.Controllers
 
                 TempData["Message"] = "(" + UserFullName + ") is already a candidate in this election";
 
-                return Json(new { url = Url.Action("Details", new { id = VotingID }) });
+                return Json(new { url = Url.Action("Details", new { id = ElectionId }) });
 
 
             }
@@ -773,7 +773,7 @@ namespace OnlineVoting.Controllers
             candidate = new Candidate
             {
                 UserId = UserID,
-                VotingId = VotingID,
+                ElectionId = ElectionId,
             };
 
             _electionRepository.AddCandidate(candidate);
@@ -783,7 +783,7 @@ namespace OnlineVoting.Controllers
 
             TempData["Message"] = "(" + UserFullName + ") is add to this election";
 
-            return Json(new { url = Url.Action("Details", new { id = VotingID }) });
+            return Json(new { url = Url.Action("Details", new { id = ElectionId }) });
 
 
         }
@@ -805,7 +805,7 @@ namespace OnlineVoting.Controllers
 
             }
 
-            return RedirectToAction(string.Format("Details/{0}", candidate.VotingId));
+            return RedirectToAction(string.Format("Details/{0}", candidate.ElectionId));
         }
 
         //-----------------test index sök------------------------------------------------------------------------
@@ -849,7 +849,7 @@ namespace OnlineVoting.Controllers
                     Remarks = Election.Remarks,
                     StateId = Election.StateId,
                     State = Election.State,
-                    VotingId = Election.VotingId,
+                    ElectionId = Election.ElectionId,
                     Winner = user,
 
                 });
@@ -976,7 +976,7 @@ namespace OnlineVoting.Controllers
                     Remarks = Election.Remarks,
                     StateId = Election.StateId,
                     State = Election.State,
-                    VotingId = Election.VotingId,
+                    ElectionId = Election.ElectionId,
                     Winner = user,
 
                 });
@@ -1025,7 +1025,7 @@ namespace OnlineVoting.Controllers
                     Remarks = voting.Remarks,
                     StateId = voting.StateId,
                     State = voting.State,
-                    VotingId = voting.VotingId,
+                    ElectionId = voting.ElectionId,
                     Winner = user,
 
                 });
@@ -1145,7 +1145,7 @@ namespace OnlineVoting.Controllers
                     QuantityVotes = voting.QuantityVotes,
                     Remarks = voting.Remarks,
                     StateId = voting.StateId,
-                    VotingId = voting.VotingId,
+                    ElectionId = voting.ElectionId,
                 };
 
 
@@ -1223,7 +1223,7 @@ namespace OnlineVoting.Controllers
 
 
 
-                return RedirectToAction("Details", new { id = voting.VotingId });
+                return RedirectToAction("Details", new { id = voting.ElectionId });
             }
 
             ViewBag.StateId = new SelectList(_stateRepository.GetStateTb(), "StateId", "Descripcion", view.StateId);
@@ -1259,7 +1259,7 @@ namespace OnlineVoting.Controllers
                 var FixTimeStart = voting.DateTimeStart.ToString("HH:mm");//får tiden från datetime objekt 
                 var FixTimeEnd = voting.DateTimeEnd.ToString("HH:mm");// får tiden från datetime objekt 
 
-                var V1 = _electionRepository.GetElectionByIdNoTracking(voting.VotingId);
+                var V1 = _electionRepository.GetElectionByIdNoTracking(voting.ElectionId);
 
 
                 var view = new ElectionCreateEditView
@@ -1278,7 +1278,7 @@ namespace OnlineVoting.Controllers
                     QuantityVotes = V1.QuantityVotes,
                     Remarks = voting.Remarks,
                     StateId = voting.StateId,
-                    VotingId = voting.VotingId,
+                    ElectionId = voting.ElectionId,
 
                 };
 
@@ -1302,7 +1302,7 @@ namespace OnlineVoting.Controllers
         {
 
 
-            var V1 = _electionRepository.GetElectionByIdNoTracking(view.VotingId);
+            var V1 = _electionRepository.GetElectionByIdNoTracking(view.ElectionId);
 
 
             var state = _stateRepository.GetStateById(V1.StateId);
@@ -1332,14 +1332,14 @@ namespace OnlineVoting.Controllers
                         QuantityVotes = view.QuantityVotes,
                         Remarks = view.Remarks,
                         StateId = view.StateId,
-                        VotingId = view.VotingId,
+                        ElectionId = view.ElectionId,
 
                     };
 
                     _electionRepository.UpdateElection(voting);
                     _electionRepository.Save();
 
-                    return RedirectToAction("Details", new { id = view.VotingId });
+                    return RedirectToAction("Details", new { id = view.ElectionId });
                 }
 
                 ViewBag.StateId = new SelectList(_stateRepository.GetStateTb(), "StateId", "Descripcion", view.StateId);
@@ -1381,7 +1381,7 @@ namespace OnlineVoting.Controllers
                 var FixTimeStart = voting.DateTimeStart.ToString("HH:mm");//får tiden från datetime objekt 
                 var FixTimeEnd = voting.DateTimeEnd.ToString("HH:mm");// får tiden från datetime objekt 
 
-                var V1 = _electionRepository.GetElectionByIdNoTracking(voting.VotingId);
+                var V1 = _electionRepository.GetElectionByIdNoTracking(voting.ElectionId);
 
 
                 var view = new ElectionCreateEditView
@@ -1399,7 +1399,7 @@ namespace OnlineVoting.Controllers
                     QuantityVotes = V1.QuantityVotes,
                     Remarks = voting.Remarks,
                     StateId = voting.StateId,
-                    VotingId = voting.VotingId,
+                    ElectionId = voting.ElectionId,
 
                 };
 
@@ -1410,7 +1410,7 @@ namespace OnlineVoting.Controllers
             else
             {
                 TempData["Message"] = "You tried to Edit (" + voting.Description + "), This election is finished and can not be edited anymore!";
-                return Json(new { url = Url.Action("Index", "Votings") });
+                return Json(new { url = Url.Action("Index", "Elections") });
             }
 
 
@@ -1420,10 +1420,10 @@ namespace OnlineVoting.Controllers
         [HttpPost]
         public ActionResult _EditElectionInfo(ElectionCreateEditView view)// postar ändringarna man gjort i valets info // VotingView view
         {
-            ViewBag.VotingId = view.VotingId;
+            ViewBag.VotingId = view.ElectionId;
 
             // NoTracking används för att inte Entity Framework inte ska binda sig till state modelen så att den längre ner kan updateras utan problem
-            var V1 = _electionRepository.GetElectionByIdNoTracking(view.VotingId);
+            var V1 = _electionRepository.GetElectionByIdNoTracking(view.ElectionId);
 
             var state = _stateRepository.GetStateById(V1.StateId);
 
@@ -1451,7 +1451,7 @@ namespace OnlineVoting.Controllers
                         QuantityVotes = view.QuantityVotes,
                         Remarks = view.Remarks,
                         StateId = view.StateId,
-                        VotingId = view.VotingId,
+                        ElectionId = view.ElectionId,
 
                     };
 
@@ -1465,7 +1465,7 @@ namespace OnlineVoting.Controllers
 
                     var views = new List<ElectionIndexView>();
 
-                    int ID = view.VotingId;
+                    int ID = view.ElectionId;
 
                     ElectionList = _electionRepository.GetListOfAllElectionsById(ID);
 
@@ -1492,7 +1492,7 @@ namespace OnlineVoting.Controllers
                             Remarks = Election.Remarks,
                             StateId = Election.StateId,
                             State = Election.State,
-                            VotingId = Election.VotingId,
+                            ElectionId = Election.ElectionId,
                             Winner = user,
 
                         });

@@ -11,7 +11,7 @@ namespace OnlineVoting.Models
     {
         //model används när man ska visa info i Delete och ElectionsForUsers Viewn
         [Key]
-        public int VotingId { get; set; }
+        public int ElectionId { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
         [StringLength(50, ErrorMessage = "The field {0} can contain maximun {1} and minimum {2} characters", MinimumLength = 3)]
@@ -59,7 +59,7 @@ namespace OnlineVoting.Models
 
         public virtual ICollection<Candidate> Candidates { get; set; }
 
-        public virtual ICollection<ElectionDetail> ElectionDetails { get; set; }
+        public virtual ICollection<ElectionVotingDetail> ElectionVotingDetails { get; set; }
 
 
 

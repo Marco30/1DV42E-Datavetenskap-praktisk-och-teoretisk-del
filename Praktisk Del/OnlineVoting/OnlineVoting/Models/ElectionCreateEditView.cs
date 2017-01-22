@@ -9,7 +9,7 @@ namespace OnlineVoting.Models
     public class ElectionCreateEditView
     {
 
-        public int VotingId { get; set; }
+        public int ElectionId { get; set; }
 
         //mode som används i creat, edit, _EditElectionInfo
 
