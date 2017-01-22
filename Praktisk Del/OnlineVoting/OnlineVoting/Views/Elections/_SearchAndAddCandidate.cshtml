@@ -18,7 +18,7 @@
     <input type="submit" value="Search" class="btn btn-primary" />
 }*@
 
-@using (Ajax.BeginForm("_SearchAndAddCandidate", "Votings", null, new AjaxOptions
+@using (Ajax.BeginForm("_SearchAndAddCandidate", "Elections", null, new AjaxOptions
 {
     InsertionMode = InsertionMode.Replace,
     HttpMethod = "POST",

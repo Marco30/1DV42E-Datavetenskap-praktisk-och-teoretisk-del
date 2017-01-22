@@ -7,7 +7,8 @@ using System.Web;
 namespace OnlineVoting.Models
 {
     // RegisterUserView ärvt från Userview, eftersom det har liknande egenskaper som behövs för användare registrering
-    public class RegisterUserView : UserView
+    // används av Register view 
+    public class AccountRegisterUserView : UserCreateEditView
     {
         [Required(ErrorMessage = "The field {0} is required")]
         [StringLength(20, ErrorMessage =

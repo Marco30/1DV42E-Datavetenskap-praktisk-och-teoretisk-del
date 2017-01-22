@@ -19,6 +19,6 @@ namespace OnlineVoting.Models
         [Display(Name = "State")]
         public String Descripcion { get; set; }
 
-        public virtual ICollection<Voting> Votings { get; set; }
+        public virtual ICollection<Election> Votings { get; set; }
     }
 }

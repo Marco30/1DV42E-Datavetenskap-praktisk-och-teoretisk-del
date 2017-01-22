@@ -6,13 +6,13 @@ using System.Web;
 
 namespace OnlineVoting.Models
 {
-    public class VotingView
+    public class ElectionCreateEditView
     {
 
         public int VotingId { get; set; }
 
-        //Model med som används vid Edit av val info
-    
+        //mode som används i creat, edit, _EditElectionInfo
+
         [Required(ErrorMessage = "The field {0} is required")]
         [StringLength(50, ErrorMessage = "The field {0} can contain maximun {1} and minimum {2} characters", MinimumLength = 3)]
         [Display(Name = "Election name")]

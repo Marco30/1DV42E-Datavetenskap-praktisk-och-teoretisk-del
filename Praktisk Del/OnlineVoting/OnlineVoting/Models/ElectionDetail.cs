@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace OnlineVoting.Models
 {
-    public class VotingDetail
+    public class ElectionDetail
     {
         // modelr för att visa detaljerade info om valet i Detail view
         [Key]
@@ -21,7 +21,7 @@ namespace OnlineVoting.Models
 
         public int CandidateId { get; set; }
 
-        public virtual Voting Voting { get; set; }
+        public virtual Election Voting { get; set; }
 
         public virtual Candidate Candidate { get; set; }
     }

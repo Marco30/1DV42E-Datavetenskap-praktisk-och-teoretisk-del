@@ -24,15 +24,14 @@ var DateAndTime =
             }
 
             // ändarar bakrund till fast vit färg som varar i 2 sceunder CSS klass 
-            $('.container.body-content').hover(function () {
+           /* $('.container.body-content').hover(function () {
                 $(this).attr('id', 'onabout');
-                //$(this).addClass("hover");
-
+              
                 setTimeout(function () {
                     $('.container.body-content').attr('id', '');
                 }, 20000);
 
-            });
+            });*/
 
 
 

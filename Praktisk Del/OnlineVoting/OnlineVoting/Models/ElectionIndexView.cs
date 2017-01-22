@@ -7,14 +7,10 @@ using System.Threading.Tasks;
 
 namespace OnlineVoting.Models
 {
-
-
     [NotMapped]
-    public class VotingVoteView : Voting
+    public class ElectionIndexView : Election
     {
-        //lista på kandidater 
-        public List<Candidate> MyCandidate { get; set; }
+        // används av index,_ElectionAfterEdit,_ElectionInfo,_UserResultsInfo och Results View ärver från Election model
+        public User Winner { get; set; }
     }
-
-
 }

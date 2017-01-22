@@ -1,4 +1,4 @@
-﻿@model IEnumerable<OnlineVoting.Models.VotingIndexView>
+﻿@model IEnumerable<OnlineVoting.Models.ElectionIndexView>
 
 @{
     ViewBag.Title = "Index";
@@ -27,7 +27,7 @@
 
 
     <div class="col-md-8">
-        @using (Ajax.BeginForm("IndexSearch", "Votings", null, new AjaxOptions
+        @using (Ajax.BeginForm("IndexSearch", "Elections", null, new AjaxOptions
         {
             InsertionMode = InsertionMode.Replace,
             HttpMethod = "POST",
@@ -68,7 +68,7 @@
                 <div class="col-md-6">
 
 
-                    @using (Ajax.BeginForm("IndexOrderBy", "Votings", null, new AjaxOptions
+                    @using (Ajax.BeginForm("IndexOrderBy", "Elections", null, new AjaxOptions
             {
                 InsertionMode = InsertionMode.Replace,
                 HttpMethod = "POST",

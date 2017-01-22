@@ -66,7 +66,7 @@ namespace OnlineVoting.Models.Repository
             return identity;
         }
 
-        public ApplicationUser CreatesUserInASPdb(RegisterUserView userView)// skpar ny anändare i ASP.net DB
+        public ApplicationUser CreatesUserInASPdb(AccountRegisterUserView userView)// skpar ny anändare i ASP.net DB
         {
 
             // Create User role

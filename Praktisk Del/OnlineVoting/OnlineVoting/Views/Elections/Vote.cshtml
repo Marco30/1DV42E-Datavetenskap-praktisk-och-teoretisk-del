@@ -1,4 +1,4 @@
-﻿@model OnlineVoting.Models.VotingVoteView
+﻿@model OnlineVoting.Models.ElectionVotingView
 @{
     ViewBag.Title = "Vote";
 }
@@ -55,7 +55,7 @@
                     @Html.DisplayFor(model => model.IsEnableBlankVote)
                 </dd>
             </dl>
-            @Html.ActionLink("Back to my votings", "MyVotings", new { }, new { @class = "btn btn-default" })
+            @Html.ActionLink("Back to my votings", "ElectionsForUsers", new { }, new { @class = "btn btn-default" })
         </div>
     </div>
     <!--Master detail 2-->

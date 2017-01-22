@@ -24,13 +24,13 @@ namespace OnlineVoting.Models
 
         public DbSet<State> States { get; set; }
 
-        public DbSet<Voting> Votings { get; set; }
+        public DbSet<Election> Elections { get; set; }
 
         public DbSet<User> Users { get; set; }
 
         public DbSet<Candidate> Candidates { get; set; }
 
-        public DbSet<VotingDetail> VotingDetails { get; set; }
+        public DbSet<ElectionDetail> ElectionDetails { get; set; }
 
 
     }

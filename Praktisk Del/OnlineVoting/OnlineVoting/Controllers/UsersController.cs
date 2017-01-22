@@ -289,7 +289,7 @@ namespace OnlineVoting.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(UserView userView)// postar den nya anändaren som admin skapat 
+        public ActionResult Create(UserCreateEditView userView)// postar den nya anändaren som admin skapat 
         {
             if (!ModelState.IsValid)
             {
@@ -359,7 +359,7 @@ namespace OnlineVoting.Controllers
             return RedirectToAction("Index");
         }
 
-
+   
         [Authorize(Roles = "Admin")]
         public ActionResult Edit(int? id)// används för att kuna ändra användares info
         {
@@ -376,7 +376,7 @@ namespace OnlineVoting.Controllers
 
             }
 
-            var userView = new UserView
+            var userView = new UserSettingsView
             {
 
                 Adress = user.Adress,
@@ -385,6 +385,7 @@ namespace OnlineVoting.Controllers
                 Phone = user.Phone,
                 UserId = user.UserId,
                 UserName = user.UserName,
+                Photo = user.Photo,
 
             };
 
@@ -394,7 +395,7 @@ namespace OnlineVoting.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(UserView userView)// postar det ändrade infot om användaren 
+        public ActionResult Edit(UserSettingsView userView)// postar det ändrade infot om användaren 
         {
             if (!ModelState.IsValid)
             {
@@ -406,15 +407,18 @@ namespace OnlineVoting.Controllers
             String path = string.Empty;
             String pic = string.Empty;
 
-            if (userView.Photo != null)
+            if (userView.NewPhoto != null)
             {
 
-                pic = Path.GetFileName(userView.Photo.FileName);
+                pic = Path.GetFileName(userView.NewPhoto.FileName);
+
                 path = Path.Combine(Server.MapPath("~/Content/Photos"), pic);
-                userView.Photo.SaveAs(path);
+
+                userView.NewPhoto.SaveAs(path);
+
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    userView.Photo.InputStream.CopyTo(ms);
+                    userView.NewPhoto.InputStream.CopyTo(ms);
                     byte[] array = ms.GetBuffer();
                 }
             }
@@ -441,6 +445,7 @@ namespace OnlineVoting.Controllers
             return RedirectToAction("Index");
         }
 
+ 
 
         [Authorize(Roles = "Admin")]
         public ActionResult Delete(int? id)// hämtar anvädnare som ska tas bort

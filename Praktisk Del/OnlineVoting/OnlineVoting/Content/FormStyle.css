@@ -326,24 +326,25 @@ padding-top: 12px;
 
 body{
    /*background-color: #eeeeee;*/
-   /*background-image:url(Images/way.jpg)*/
+   /*
     background: url('Images/way.jpg') no-repeat fixed;
     -webkit-background-size: cover;
     -moz-background-size: cover;
     -o-background-size: cover;
-    background-size: cover;
+    background-size: cover;*/
 }
 
 .container.body-content
 {   
-     color: white;
-    background-color: #0e0d0d66;
-    font-size: 14px;
-    transition: all 0.5s cubic-bezier(0.39, 0.575, 0.565, 1);
+     color: black;
+     font-size: 14px;
+   /* color: white;
+       background-color: #0e0d0d66;
+    transition: all 0.5s cubic-bezier(0.39, 0.575, 0.565, 1);*/
 }
 
 
-.container.body-content:hover
+/*.container.body-content:hover
 {   
      color: black;
     background-color: white;
@@ -356,7 +357,8 @@ body{
     background-color: white;
     font-size: 14px;
     transition: all 0.5s cubic-bezier(0.39, 0.575, 0.565, 1);
-}
+}*/
+
 
 /*meddelanden*/
 
@@ -426,19 +428,9 @@ body{
 
 /*fotter*/
 footer {
-    display: block;
-    color: white;
+   color: black;
 }
 
-.container.body-content:hover footer {
-    display: block;
-    color: black;
-}
-
-#onabout footer {
-    display: block;
-    color: black;
-}
 /*start page*/
 
 .jumbotron {
@@ -448,7 +440,7 @@ footer {
     font-weight: 200;
     line-height: 2.1428571435;
     color: inherit;
-    background-color: #fff0;
+    background-color: inherit;
 }
 
 
@@ -525,10 +517,17 @@ padding-bottom: 47px;
 
 /*navigering*/
 
+.navbar.navbar-inverse.navbar-fixed-top {
+    background-color: #222222;
+    border-color: #080808;
+    /*background-image:url('Images/cool.jpg');*/
+}
+
+
 .nav > li {
     position: relative;
     display: block;
-    background-color: #ffffff4d;
+    background-color: black;
 }
 
 .navbar-inverse .navbar-brand {
@@ -775,11 +774,6 @@ text-shadow: 0 1px 0 #cfd8de;
 
 /*index tabeler */
 
-.navbar.navbar-inverse.navbar-fixed-top {
-    background-color: #222222;
-    border-color: #080808;
-    background-image:url('Images/cool.jpg');
-}
 
 .rowUserIndex {
     margin-right: -15px;

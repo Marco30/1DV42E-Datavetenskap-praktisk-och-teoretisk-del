@@ -1,11 +1,11 @@
-﻿@model OnlineVoting.Models.VotingView
+﻿@model OnlineVoting.Models.ElectionCreateEditView
 @{
     ViewBag.Title = "_Edit";
 }
 
 
 
-@using (Ajax.BeginForm("_EditElectionInfo", "Votings", Model, new AjaxOptions
+@using (Ajax.BeginForm("_EditElectionInfo", "Elections", Model, new AjaxOptions
 {
     HttpMethod = "POST",
     InsertionMode = InsertionMode.Replace,

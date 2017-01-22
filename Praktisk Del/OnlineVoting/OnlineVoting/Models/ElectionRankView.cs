@@ -6,9 +6,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OnlineVoting.Models
 {
-    public class Rank
+    public class ElectionRankView
     {
         // modelen används för att visa resultat info om valet och lista på vem som van och hur många röster alla deltagare fåt 
+        // används av ShowResults viewn 
         [Required(ErrorMessage = "The field {0} is required")]
         public int VotingID { get; set; }
 

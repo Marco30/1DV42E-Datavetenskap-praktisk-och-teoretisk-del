@@ -7,9 +7,10 @@ using System.Web;
 
 namespace OnlineVoting.Models
 {
-    public class UserView
+    public class UserCreateEditView
     {
-        // användas vi skapande av användare
+        // användas vi skapande av användare 
+        // används av creat och edit view 
         public int UserId { get; set; }
 
         [Display(Name = "E-Mail")]
@@ -37,7 +38,7 @@ namespace OnlineVoting.Models
         [StringLength(100, ErrorMessage = "The field {0} can contain maximum {1} and minimum {2} characters", MinimumLength = 10)]
         public String Adress { get; set; }
 
-        [Required(ErrorMessage = "img {0} is required")]
+       [Required(ErrorMessage = "img {0} is required")]
         public HttpPostedFileBase Photo { get; set; }
 
     }

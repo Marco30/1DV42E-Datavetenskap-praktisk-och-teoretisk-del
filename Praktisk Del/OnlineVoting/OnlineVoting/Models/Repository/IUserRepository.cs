@@ -15,7 +15,7 @@ namespace OnlineVoting.Models.Repository
         //interface i C# är ett sätt att komma runt bristen på multipelt arv i C #, vilket innebär att man inte inte kan ärva från flera klasser C# men du kan inplämnetar flera gränssnitt istället i C#.
         void Add(User user);
         void Save();
-        void AdminCreatesUserInASPdb(UserView userView);
+        void AdminCreatesUserInASPdb(UserCreateEditView userView);
         List<User> GetUserListByFirstName();
         User GetUserByUserEmail(string UserEmail);
         User GetUserByUserId(int UserID);

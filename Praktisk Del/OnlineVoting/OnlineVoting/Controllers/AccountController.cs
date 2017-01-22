@@ -79,7 +79,7 @@ namespace OnlineVoting.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Register(RegisterUserView userView)
+        public async Task<ActionResult> Register(AccountRegisterUserView userView)
         {
             if (ModelState.IsValid)
             {

@@ -6,15 +6,16 @@ using System.Web;
 
 namespace OnlineVoting.Models
 {
-    public class DetailsVotingView
-    {
-        //Model för at visa detaljerad info om valet 
 
+    public class Election
+    {
+        //model används när man ska visa info i Delete och ElectionsForUsers Viewn
+        [Key]
         public int VotingId { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
-        [StringLength(100, ErrorMessage = "The field {0} can contain maximum {1} and minimum {2} characters", MinimumLength = 10)]
-        [Display(Name = "Voting Description")]
+        [StringLength(50, ErrorMessage = "The field {0} can contain maximun {1} and minimum {2} characters", MinimumLength = 3)]
+        [Display(Name = "Election")]
         public string Description { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
@@ -22,16 +23,17 @@ namespace OnlineVoting.Models
         public int StateId { get; set; }
 
         [DataType(DataType.MultilineText)]
+        [Display(Name = "Description")]
         public string Remarks { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
-        [Display(Name = "Date time start")]
+        [Display(Name = "DateTime Start")]
         [DataType(DataType.DateTime)]
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd HH:mm tt}", ApplyFormatInEditMode = true)]
         public DateTime DateTimeStart { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
-        [Display(Name = "Date time end")]
+        [Display(Name = "DateTime End")]
         [DataType(DataType.DateTime)]
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd HH:mm tt}", ApplyFormatInEditMode = true)]
         public DateTime DateTimeEnd { get; set; }
@@ -41,23 +43,30 @@ namespace OnlineVoting.Models
         public bool IsForAllUsers { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
-        [Display(Name = "Is enabled blank vote?")]
+        [Display(Name = "Enabled blank vote")]
         public bool IsEnableBlankVote { get; set; }
 
-        [Display(Name = "Quantity votes")]
+        [Display(Name = "Total votes")]
         public int QuantityVotes { get; set; }
 
-        [Display(Name = "Quantity blank votes")]
+        [Display(Name = "Blank votes")]
         public int QuantityBlankVotes { get; set; }
 
         [Display(Name = "Winner")]
         public int CandidateWinId { get; set; }
 
-        public State State { get; set; }
+        public virtual State State { get; set; }
 
-        public List<Candidate> Candidates { get; set; }
+        public virtual ICollection<Candidate> Candidates { get; set; }
 
-        public List<User> Users { get; set; }// testar 
+        public virtual ICollection<ElectionDetail> ElectionDetails { get; set; }
+
+
+
+
+
+
+
 
     }
 }

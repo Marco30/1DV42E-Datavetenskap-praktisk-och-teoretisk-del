@@ -38,37 +38,37 @@ namespace OnlineVoting.Models.Repository
         }
 
 
-        public Voting GetElectionByIdNoTracking(int ElectionId)// används för att inte Entity Framework ska binda data till en state model så att den kan användas utan att påvärka annat data av samma model typ som används i sammas metod 
+        public Election GetElectionByIdNoTracking(int ElectionId)// används för att inte Entity Framework ska binda data till en state model så att den kan användas utan att påvärka annat data av samma model typ som används i sammas metod 
         {
-            var Election = db.Votings.AsNoTracking().Where(p => p.VotingId == ElectionId).FirstOrDefault();
+            var Election = db.Elections.AsNoTracking().Where(p => p.VotingId == ElectionId).FirstOrDefault();
             return Election;
         }
        
 
-        public void VotingDetailAdd(VotingDetail votingDetail)// läger till votingDetails til DB
+        public void VotingDetailAdd(ElectionDetail votingDetail)// läger till votingDetails til DB
         {
-            db.VotingDetails.Add(votingDetail);
+            db.ElectionDetails.Add(votingDetail);
         }
 
-        public Voting GetElectionById(int ElectionID)// hämtar val ut i från ID 
+        public Election GetElectionById(int ElectionID)// hämtar val ut i från ID 
         {
 
-            var Election = db.Votings.Find(ElectionID);
+            var Election = db.Elections.Find(ElectionID);
 
             return Election;
         }
 
-        public List<Voting> GetListOfAllElectionsById(int id)
+        public List<Election> GetListOfAllElectionsById(int id)
         {
-            var ElectionsList = db.Votings.Where(x => x.VotingId == id).Include(v => v.State).ToList();
+            var ElectionsList = db.Elections.Where(x => x.VotingId == id).Include(v => v.State).ToList();
             return ElectionsList;
 
         }
 
-        public void AddElection(Voting voting)// hämtar val ut i från ID 
+        public void AddElection(Election voting)// hämtar val ut i från ID 
         {
 
-            db.Votings.Add(voting);
+            db.Elections.Add(voting);
         }
         //Candidate 
 
@@ -121,9 +121,9 @@ namespace OnlineVoting.Models.Repository
         }
 
         //---
-        public List<Voting> GetListOfElectionIfOpen(State state)// hämtar valen som är öpan, där röstnings tiden gäller från DB 
+        public List<Election> GetListOfElectionIfOpen(State state)// hämtar valen som är öpan, där röstnings tiden gäller från DB 
         {
-            var votings = db.Votings
+            var votings = db.Elections
                 .Where(v => v.StateId == state.StateId &&
                 v.DateTimeStart <= DateTime.Now &&
                 v.DateTimeEnd >= DateTime.Now)
@@ -134,9 +134,9 @@ namespace OnlineVoting.Models.Repository
             return votings;
         }
 
-        public VotingDetail GetIfUserAlreadyVotedInElection(int VotingId, int UserId)// använda för att kontrollera om en användare redan röstat 
+        public ElectionDetail GetIfUserAlreadyVotedInElection(int VotingId, int UserId)// använda för att kontrollera om en användare redan röstat 
         {
-            var votingDetail = db.VotingDetails.
+            var votingDetail = db.ElectionDetails.
                 Where(vd => vd.VotingID == VotingId &&
                 vd.UserId == UserId).FirstOrDefault();
 
@@ -144,7 +144,7 @@ namespace OnlineVoting.Models.Repository
         }
 
 
-        public List<Rank> ShowResultsOfElectionById(int ElectionID)
+        public List<ElectionRankView> ShowResultsOfElectionById(int ElectionID)
         {
             var connectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
 
@@ -163,7 +163,7 @@ namespace OnlineVoting.Models.Repository
                 try
                 {
                     // Skapar ett List-objekt med 100 platser.
-                    var Rank = new List<Rank>(100);
+                    var Rank = new List<ElectionRankView>(100);
 
                     // Skapar och initierar ett SqlCommand-objekt som används till att exekveras specifierad lagrad procedur.
                     var command = new SqlCommand(sql, connection);
@@ -186,7 +186,7 @@ namespace OnlineVoting.Models.Repository
                         while (reader.Read())
                         {
                             // Hämtar ut datat för en post.
-                            Rank.Add(new Rank
+                            Rank.Add(new ElectionRankView
                             {
                                 VotingID = reader.GetInt32(VotingID),
                                 Electionname = reader.GetString(Electionname),
@@ -209,94 +209,94 @@ namespace OnlineVoting.Models.Repository
             }
         }
 
-        public List<Voting> GetElectionByStateId(State state)
+        public List<Election> GetElectionByStateId(State state)
         {
-            var votings = db.Votings.Where(v => v.StateId == state.StateId).Include(v => v.State).ToList();              
+            var votings = db.Elections.Where(v => v.StateId == state.StateId).Include(v => v.State).ToList();              
             return votings;
         }
 
-        public List<Voting> GetListOfAllElections()
+        public List<Election> GetListOfAllElections()
         {
-            var votings = db.Votings.Include(v => v.State).ToList();  
+            var votings = db.Elections.Include(v => v.State).ToList();  
             return votings;
 
         }
 
-        public List<Voting> GetElectionByName(string SearchText)// söker val namn man sökt på i DB för att visas i viewn 
+        public List<Election> GetElectionByName(string SearchText)// söker val namn man sökt på i DB för att visas i viewn 
         {
-            var votings = db.Votings.Where(x => x.Description.StartsWith(SearchText)).ToList();
+            var votings = db.Elections.Where(x => x.Description.StartsWith(SearchText)).ToList();
 
             return votings;
         }
 
-        public List<Voting> GetElectionByNameAndStateId(string SearchText, State state)
+        public List<Election> GetElectionByNameAndStateId(string SearchText, State state)
         {
-            var votings = db.Votings.Where(x => x.Description.StartsWith(SearchText) & x.StateId == state.StateId).ToList();
+            var votings = db.Elections.Where(x => x.Description.StartsWith(SearchText) & x.StateId == state.StateId).ToList();
 
             return votings;
         }
 
         public List<string> GetElectionByNameForAutocomplete(string SearchText)
         {
-            var ElectionList = db.Votings.Where(x => x.Description.StartsWith(SearchText)).Select(y => y.Description).ToList();
+            var ElectionList = db.Elections.Where(x => x.Description.StartsWith(SearchText)).Select(y => y.Description).ToList();
 
             return ElectionList;
         }
 
         public List<string> GetElectionByNameAndStateIdForAutocomplete(string SearchText, State state)
         {
-            var votings = db.Votings.Where(x => x.Description.StartsWith(SearchText) & x.StateId == state.StateId).Select(y => y.Description).ToList();
+            var votings = db.Elections.Where(x => x.Description.StartsWith(SearchText) & x.StateId == state.StateId).Select(y => y.Description).ToList();
 
             return votings;
         }
 
-        public List<Voting> GetElectionByYearandMonths(int year, int MonthsNum)
+        public List<Election> GetElectionByYearandMonths(int year, int MonthsNum)
         {
-            var ElectionList = db.Votings.Where(x => x.DateTimeStart.Year == year & x.DateTimeStart.Month == MonthsNum).ToList();
+            var ElectionList = db.Elections.Where(x => x.DateTimeStart.Year == year & x.DateTimeStart.Month == MonthsNum).ToList();
 
             return ElectionList;
         }
 
-        public List<Voting> GetElectionByYear(int year)
+        public List<Election> GetElectionByYear(int year)
         {
-            var ElectionList = db.Votings.Where(x => x.DateTimeStart.Year == year).ToList();
+            var ElectionList = db.Elections.Where(x => x.DateTimeStart.Year == year).ToList();
 
             return ElectionList;
         }
 
-        public List<Voting> GetElectionByMonths(int MonthsNum)
+        public List<Election> GetElectionByMonths(int MonthsNum)
         {
-            var ElectionList = db.Votings.Where(x => x.DateTimeStart.Month == MonthsNum).ToList();
+            var ElectionList = db.Elections.Where(x => x.DateTimeStart.Month == MonthsNum).ToList();
 
             return ElectionList;
         }
 
-        public List<Voting> GetElectionByYearAndStateId(int year, State state)
+        public List<Election> GetElectionByYearAndStateId(int year, State state)
         {
-            var votings = db.Votings.Where(x => x.DateTimeStart.Year == year & x.StateId == state.StateId).ToList();
+            var votings = db.Elections.Where(x => x.DateTimeStart.Year == year & x.StateId == state.StateId).ToList();
                          
             return votings;
         }
 
-        public List<Voting> GetElectionByMonthsAndStateId(int MonthsNum, State state)
+        public List<Election> GetElectionByMonthsAndStateId(int MonthsNum, State state)
         {
-            var votings = db.Votings.Where(x => x.DateTimeStart.Month == MonthsNum & x.StateId == state.StateId).ToList();
+            var votings = db.Elections.Where(x => x.DateTimeStart.Month == MonthsNum & x.StateId == state.StateId).ToList();
 
             return votings;
         }
 
-        public List<Voting> GetElectionByYearMonthsAndStateId(int year, int MonthsNum, State state)
+        public List<Election> GetElectionByYearMonthsAndStateId(int year, int MonthsNum, State state)
         {
-            var votings = db.Votings.Where(x => x.DateTimeStart.Year == year & x.DateTimeStart.Month == MonthsNum & x.StateId == state.StateId).ToList();
+            var votings = db.Elections.Where(x => x.DateTimeStart.Year == year & x.DateTimeStart.Month == MonthsNum & x.StateId == state.StateId).ToList();
           
             return votings;
         }
 
-        public void UpdateElection(Voting voting)//Regdigerar kontakt 
+        public void UpdateElection(Election voting)//Regdigerar kontakt 
         {
             if (db.Entry(voting).State == EntityState.Detached)// kontrolerar om Entity är detached för att attacha den 
             {
-                db.Votings.Attach(voting);// attachar data till DataContext 
+                db.Elections.Attach(voting);// attachar data till DataContext 
 
             }
 
@@ -304,14 +304,14 @@ namespace OnlineVoting.Models.Repository
             //_entities.SaveChanges();
         }
 
-        public void DeleteElection(Voting Election)
+        public void DeleteElection(Election Election)
         {
             if (db.Entry(Election).State == EntityState.Detached)// kontrolerar om Entity är detached för att attacha den 
             {
-                db.Votings.Attach(Election);// attachar data till DataContext 
+                db.Elections.Attach(Election);// attachar data till DataContext 
             }
 
-            db.Votings.Remove(Election);
+            db.Elections.Remove(Election);
         }
 
         //---

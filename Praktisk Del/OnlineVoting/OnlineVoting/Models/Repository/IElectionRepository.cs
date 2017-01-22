@@ -20,9 +20,9 @@ namespace OnlineVoting.Models.Repository
 
         void Save();
         DbContextTransaction Transaction();
-        void VotingDetailAdd(VotingDetail votingDetail);
+        void VotingDetailAdd(ElectionDetail votingDetail);
 
-        Voting GetElectionById(int ElectionID);
+        Election GetElectionById(int ElectionID);
         Candidate GetListOfAllElectionCandidates(int ElectionID);
         Candidate GetCandidateById(int ElectionID);
         void DeleteCandidate(Candidate candidate);
@@ -30,27 +30,27 @@ namespace OnlineVoting.Models.Repository
         void AddCandidate(Candidate candidate);
         Candidate GetCandidateByElectionIdAndUserId(int ElectionID, int UserId);
 
-        List<Rank> ShowResultsOfElectionById(int ElectionID);
-        Voting GetElectionByIdNoTracking(int ElectionId);
-        void AddElection(Voting voting);
-        List<Voting> GetListOfAllElectionsById(int id);
-        void DeleteElection(Voting Election);
-        List<Voting> GetListOfAllElections();
+        List<ElectionRankView> ShowResultsOfElectionById(int ElectionID);
+        Election GetElectionByIdNoTracking(int ElectionId);
+        void AddElection(Election voting);
+        List<Election> GetListOfAllElectionsById(int id);
+        void DeleteElection(Election Election);
+        List<Election> GetListOfAllElections();
         List<string> GetElectionByNameForAutocomplete(string SearchText);
-        List<Voting> GetElectionByName(string SearchText);
-        List<Voting> GetListOfElectionIfOpen(State state);
-        VotingDetail GetIfUserAlreadyVotedInElection(int VotingId, int UserId);
-        List<Voting> GetElectionByStateId(State state);
-        List<Voting> GetElectionByYear(int year);
-        List<Voting> GetElectionByMonths(int MonthsNum);
-        List<Voting> GetElectionByYearandMonths(int year, int MonthsNum);
-        List<Voting> GetElectionByNameAndStateId(string SearchText, State state);
+        List<Election> GetElectionByName(string SearchText);
+        List<Election> GetListOfElectionIfOpen(State state);
+        ElectionDetail GetIfUserAlreadyVotedInElection(int VotingId, int UserId);
+        List<Election> GetElectionByStateId(State state);
+        List<Election> GetElectionByYear(int year);
+        List<Election> GetElectionByMonths(int MonthsNum);
+        List<Election> GetElectionByYearandMonths(int year, int MonthsNum);
+        List<Election> GetElectionByNameAndStateId(string SearchText, State state);
         List<string> GetElectionByNameAndStateIdForAutocomplete(string SearchText, State state);
-        List<Voting> GetElectionByYearAndStateId(int year, State state);
-        List<Voting> GetElectionByMonthsAndStateId(int MonthsNum, State state);
-        List<Voting> GetElectionByYearMonthsAndStateId(int year, int MonthsNum, State state);
+        List<Election> GetElectionByYearAndStateId(int year, State state);
+        List<Election> GetElectionByMonthsAndStateId(int MonthsNum, State state);
+        List<Election> GetElectionByYearMonthsAndStateId(int year, int MonthsNum, State state);
 
-        void UpdateElection(Voting voting);
+        void UpdateElection(Election voting);
         
     }
 }

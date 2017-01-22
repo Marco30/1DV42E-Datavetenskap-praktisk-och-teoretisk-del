@@ -36,7 +36,7 @@ namespace OnlineVoting.Models.Repository
 
         }
 
-        public void AdminCreatesUserInASPdb(UserView userView)// skapar en ny användare i ASP.net automat genererad DB 
+        public void AdminCreatesUserInASPdb(UserCreateEditView userView)// skapar en ny användare i ASP.net automat genererad DB 
         {
 
             string roleName = "User";// användarens rol i systemet  

@@ -22,7 +22,7 @@ namespace OnlineVoting.Models.Repository
 
         Task<ApplicationUser> GetUserByEmailAndPassword(string email, string password);
         Task<ClaimsIdentity> ControlIdentityInASPdb(ApplicationUser user);
-        ApplicationUser CreatesUserInASPdb(RegisterUserView userView);
+        ApplicationUser CreatesUserInASPdb(AccountRegisterUserView userView);
         Task<IdentityResult> RemoveLoginInASPdb(string UserId, string loginProvider, string providerKey);
         Task<IdentityResult> ChangePasswordForUserInASPdb(string UserId, string OldPassword, string NewPassword);
         Task<IdentityResult> AddPasswordForUserToASPdb(string UserId, string NewPassword);

@@ -16,7 +16,7 @@ using OnlineVoting.Models.Repository;
 namespace OnlineVoting.Controllers
 {
 
-    public class VotingsController : Controller
+    public class ElectionsController : Controller
     {
 
 
@@ -24,7 +24,7 @@ namespace OnlineVoting.Controllers
         private IUserRepository _userRepository;
         private IStateRepository _stateRepository;
 
-        public VotingsController()
+        public ElectionsController()
         {
             _electionRepository = new ElectionRepository();
             _userRepository = new UserRepository();
@@ -62,15 +62,24 @@ namespace OnlineVoting.Controllers
 
         public ActionResult ShowResults(int id)// visar resultat på valet med vinar och lista på alla deltagar och antal röster dem fåt
         {
+            try
+            {
+                var Rank = _electionRepository.ShowResultsOfElectionById(id);
 
-            var Rank = _electionRepository.ShowResultsOfElectionById(id);
+                ViewBag.NameOfElection = Rank[0].Electionname;
+                ViewBag.StateOfElection = Rank[0].State;
+                ViewBag.WinnerOfElection = Rank[0].Candidate;
+                ViewBag.NumberOfVotes = Rank[0].QuantityVotes;
 
-            ViewBag.NameOfElection = Rank[0].Electionname;
-            ViewBag.StateOfElection = Rank[0].State;
-            ViewBag.WinnerOfElection = Rank[0].Candidate;
-            ViewBag.NumberOfVotes = Rank[0].QuantityVotes;
-
-            return View(Rank);
+                return View(Rank);
+            }
+            catch// det körs när ShowResultsOfElectionById() misslyckats, vilket betyder att det är något fel i DB eller att ingen röstat änu och där med finns ingen data
+            {
+                var election = _electionRepository.GetElectionById(id);
+                TempData["Message"] = "No one has voted yet on this election (" + election.Description + ")";
+                return Redirect(ControllerContext.HttpContext.Request.UrlReferrer.T‌​oString());
+            }
+           
         }
 
 
@@ -81,7 +90,7 @@ namespace OnlineVoting.Controllers
 
             var votings = _electionRepository.GetElectionByStateId(state);
 
-            var views = new List<VotingIndexView>();
+            var views = new List<ElectionIndexView>();
 
             var Yearlist = new List<string>();
 
@@ -95,7 +104,7 @@ namespace OnlineVoting.Controllers
                     user = _userRepository.GetUserByUserId(voting.CandidateWinId);
                 }
 
-                views.Add(new VotingIndexView
+                views.Add(new ElectionIndexView
                 {
                     CandidateWinId = voting.CandidateWinId,
                     DateTimeEnd = voting.DateTimeEnd,
@@ -144,9 +153,9 @@ namespace OnlineVoting.Controllers
         [HttpPost]
         public ActionResult ResultsIndexSearch(String SearchText)// gör sökning på val namn i index view och ger resultatet 
         {
-            List<Voting> ElectionList;
+            List<Election> ElectionList;
 
-            var views = new List<VotingIndexView>();
+            var views = new List<ElectionIndexView>();
 
             var state = this.GetState("Closed");
 
@@ -168,7 +177,7 @@ namespace OnlineVoting.Controllers
                     user = _userRepository.GetUserByUserId(Election.CandidateWinId);
                 }
 
-                views.Add(new VotingIndexView
+                views.Add(new ElectionIndexView
                 {
                     CandidateWinId = Election.CandidateWinId,
                     DateTimeEnd = Election.DateTimeEnd,
@@ -214,7 +223,7 @@ namespace OnlineVoting.Controllers
                 SelectedMonths = "";
             }
 
-            List<Voting> ElectionList;
+            List<Election> ElectionList;
 
             int MonthsNum = 0;
 
@@ -260,7 +269,7 @@ namespace OnlineVoting.Controllers
                 ElectionList = _electionRepository.GetElectionByStateId(state);
             }
 
-            var views = new List<VotingIndexView>();
+            var views = new List<ElectionIndexView>();
 
             foreach (var Election in ElectionList)
             {
@@ -270,7 +279,7 @@ namespace OnlineVoting.Controllers
                     user = _userRepository.GetUserByUserId(Election.CandidateWinId);
                 }
 
-                views.Add(new VotingIndexView
+                views.Add(new ElectionIndexView
                 {
                     CandidateWinId = Election.CandidateWinId,
                     DateTimeEnd = Election.DateTimeEnd,
@@ -387,12 +396,12 @@ namespace OnlineVoting.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        private bool VoteCandidate(Models.User user, Candidate candidate, Voting voting) // röstnings funktion 
+        private bool VoteCandidate(Models.User user, Candidate candidate, Election voting) // röstnings funktion 
         {
 
             using (var transaction = _electionRepository.Transaction())// kontakt med DB och transaction anbvänds i MVC för att kunna läga till data i flera tabeler 
             {
-                var votingDetail = new VotingDetail
+                var votingDetail = new ElectionDetail
                 {
                     CandidateId = candidate.CandidateId,
                     DateTime = DateTime.Now,
@@ -469,12 +478,12 @@ namespace OnlineVoting.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        private bool VoteBlank(Models.User user, Candidate candidate, Voting voting) // röstnings funktion för att rösta blankt 
+        private bool VoteBlank(Models.User user, Candidate candidate, Election voting) // röstnings funktion för att rösta blankt 
         {
 
             using (var transaction = _electionRepository.Transaction())// kontakt med DB och transaction anbvänds i MVC för att kunna läga till data i flera tabeler 
             {
-                var votingDetail = new VotingDetail
+                var votingDetail = new ElectionDetail
                 {
                     CandidateId = candidate.CandidateId,
                     DateTime = DateTime.Now,
@@ -509,11 +518,11 @@ namespace OnlineVoting.Controllers
         //----------------------------------------------------  
 
         [Authorize(Roles = "User")]
-        public ActionResult Vote(int votingId)// visar röstnigns Viewn
+        public ActionResult Vote(int votingId)// visar röstnigns Viewn för användar som är inlogad som User
         {
             var voting = _electionRepository.GetElectionById(votingId);
 
-            var view = new VotingVoteView
+            var view = new ElectionVotingView
             {
 
                 DateTimeEnd = voting.DateTimeEnd,
@@ -538,7 +547,7 @@ namespace OnlineVoting.Controllers
 
 
         [Authorize(Roles = "User")]
-        public ActionResult MyVotings()// visar valen som är pågång 
+        public ActionResult ElectionsForUsers()// visar valen som är pågång 
         {
             // söker login
             var user = _userRepository.GetUserByUserEmail(this.User.Identity.Name);
@@ -805,9 +814,9 @@ namespace OnlineVoting.Controllers
         [HttpPost]
         public ActionResult IndexSearch(String SearchText)// gör sökning på val namn i index view och ger resultatet 
         {
-            List<Voting> ElectionList;
+            List<Election> ElectionList;
 
-            var views = new List<VotingIndexView>();
+            var views = new List<ElectionIndexView>();
 
             if (string.IsNullOrEmpty(SearchText))
             {
@@ -827,7 +836,7 @@ namespace OnlineVoting.Controllers
                     user = _userRepository.GetUserByUserId(Election.CandidateWinId);
                 }
 
-                views.Add(new VotingIndexView
+                views.Add(new ElectionIndexView
                 {
                     CandidateWinId = Election.CandidateWinId,
                     DateTimeEnd = Election.DateTimeEnd,
@@ -871,7 +880,7 @@ namespace OnlineVoting.Controllers
                 SelectedMonths = "";
             }
 
-            List<Voting> ElectionList;
+            List<Election> ElectionList;
 
             int MonthsNum = 0;
 
@@ -944,7 +953,7 @@ namespace OnlineVoting.Controllers
 
             }
 
-            var views = new List<VotingIndexView>();
+            var views = new List<ElectionIndexView>();
 
             foreach (var Election in ElectionList)
             {
@@ -954,7 +963,7 @@ namespace OnlineVoting.Controllers
                     user = _userRepository.GetUserByUserId(Election.CandidateWinId);
                 }
 
-                views.Add(new VotingIndexView
+                views.Add(new ElectionIndexView
                 {
                     CandidateWinId = Election.CandidateWinId,
                     DateTimeEnd = Election.DateTimeEnd,
@@ -987,7 +996,7 @@ namespace OnlineVoting.Controllers
         {
             var votings = _electionRepository.GetListOfAllElections();
 
-            var views = new List<VotingIndexView>();
+            var views = new List<ElectionIndexView>();
 
 
 
@@ -1003,7 +1012,7 @@ namespace OnlineVoting.Controllers
 
                 }
 
-                views.Add(new VotingIndexView
+                views.Add(new ElectionIndexView
                 {
                     CandidateWinId = voting.CandidateWinId,
                     DateTimeEnd = voting.DateTimeEnd,
@@ -1110,7 +1119,7 @@ namespace OnlineVoting.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
 
-            Voting voting = _electionRepository.GetElectionById(id.GetValueOrDefault());
+            Election voting = _electionRepository.GetElectionById(id.GetValueOrDefault());
 
             if (voting == null)
             {
@@ -1123,7 +1132,7 @@ namespace OnlineVoting.Controllers
             if ("Closed" != state.Descripcion)
             {
 
-                var view = new DetailsVotingView
+                var view = new ElectionDetailsView
                 {
                     Candidates = voting.Candidates.ToList(),
                     CandidateWinId = voting.CandidateWinId,
@@ -1173,7 +1182,7 @@ namespace OnlineVoting.Controllers
             }
 
             //DateTime
-            var view = new VotingView
+            var view = new ElectionCreateEditView
             {
                 DateStart = DateTime.Now,
                 DateEnd = DateTime.Now,
@@ -1187,12 +1196,12 @@ namespace OnlineVoting.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(VotingView view)// postar valet man skapat 
+        public ActionResult Create(ElectionCreateEditView view)// postar valet man skapat 
         {
             if (ModelState.IsValid)
             {
                 //DateTime
-                var voting = new Voting
+                var voting = new Election
                 {
                     DateTimeEnd = view.DateEnd
                                   .AddHours(view.TimeEnd.Hour)
@@ -1253,7 +1262,7 @@ namespace OnlineVoting.Controllers
                 var V1 = _electionRepository.GetElectionByIdNoTracking(voting.VotingId);
 
 
-                var view = new VotingView
+                var view = new ElectionCreateEditView
                 {
 
 
@@ -1289,7 +1298,7 @@ namespace OnlineVoting.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(VotingView view)// postar ändringarna man gjort i valets info
+        public ActionResult Edit(ElectionCreateEditView view)// postar ändringarna man gjort i valets info
         {
 
 
@@ -1309,7 +1318,7 @@ namespace OnlineVoting.Controllers
                     TimeSpan timeOfStart = view.TimeStart.TimeOfDay;// kommer användas för att längre ner slå ihop tid och datume 
 
                     //DateTime
-                    var voting = new Voting
+                    var voting = new Election
                     {
 
 
@@ -1375,7 +1384,7 @@ namespace OnlineVoting.Controllers
                 var V1 = _electionRepository.GetElectionByIdNoTracking(voting.VotingId);
 
 
-                var view = new VotingView
+                var view = new ElectionCreateEditView
                 {
 
                     CandidateWinId = voting.CandidateWinId,
@@ -1409,7 +1418,7 @@ namespace OnlineVoting.Controllers
 
         [ValidateAntiForgeryToken]
         [HttpPost]
-        public ActionResult _EditElectionInfo(VotingView view)// postar ändringarna man gjort i valets info // VotingView view
+        public ActionResult _EditElectionInfo(ElectionCreateEditView view)// postar ändringarna man gjort i valets info // VotingView view
         {
             ViewBag.VotingId = view.VotingId;
 
@@ -1429,7 +1438,7 @@ namespace OnlineVoting.Controllers
                     TimeSpan timeOfStart = view.TimeStart.TimeOfDay;// kommer användas för att längre ner slå ihop tid och datume 
 
                     //DateTime
-                    var voting = new Voting
+                    var voting = new Election
                     {
 
                         CandidateWinId = view.CandidateWinId,
@@ -1452,9 +1461,9 @@ namespace OnlineVoting.Controllers
                     //--------------------------------- det ska flytas ut till egen ActionResult metod
 
 
-                    List<Voting> ElectionList;
+                    List<Election> ElectionList;
 
-                    var views = new List<VotingIndexView>();
+                    var views = new List<ElectionIndexView>();
 
                     int ID = view.VotingId;
 
@@ -1470,7 +1479,7 @@ namespace OnlineVoting.Controllers
 
                         }
 
-                        views.Add(new VotingIndexView
+                        views.Add(new ElectionIndexView
                         {
                             CandidateWinId = Election.CandidateWinId,
                             DateTimeEnd = Election.DateTimeEnd,
@@ -1521,7 +1530,7 @@ namespace OnlineVoting.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Voting voting = _electionRepository.GetElectionById(id.GetValueOrDefault());
+            Election voting = _electionRepository.GetElectionById(id.GetValueOrDefault());
 
 
             if (voting == null)
@@ -1535,7 +1544,7 @@ namespace OnlineVoting.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)// postar att man tar bort valet 
         {
-            Voting voting = _electionRepository.GetElectionById(id);
+            Election voting = _electionRepository.GetElectionById(id);
 
             _electionRepository.DeleteElection(voting);
 
