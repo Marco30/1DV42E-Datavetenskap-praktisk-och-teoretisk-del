@@ -10,6 +10,10 @@ using Microsoft.AspNet.Identity.EntityFramework;
 using Microsoft.Owin.Security;
 using OnlineVoting.Models;
 using System.IO;
+
+using System.Net.Mail;
+using System.Net;
+
 using OnlineVoting.Models.Repository;
 
 namespace OnlineVoting.Controllers
@@ -44,24 +48,32 @@ namespace OnlineVoting.Controllers
         // public async Task<ActionResult> Login(LoginViewModel model, string returnUrl)
         public async Task<ActionResult> Login(LoginViewModel model, string returnUrl)
         {
+
+            //----------------- test email validering 
+
             if (ModelState.IsValid)
             {
+                var user = await _accountRepository.GetUserByEmailAndPassword(model.UserName, model.Password);
 
-                var user = await _accountRepository.GetUserByEmailAndPassword(model.UserName, model.Password);// hämtar användar från Db genom metod i AccountRepository
-
-      
-                    if (user != null)
-                    {
-                        await SignInAsync(user, model.RememberMe);
-                        return RedirectToLocal(returnUrl);
-                    }
+                if (user != null)
+                {
+                   /* if (user.EmailConfirmed == true)
+                    {*/
+                        await SignInAsync(user, model.RememberMe); return RedirectToLocal(returnUrl);
+                    /*}
                     else
                     {
-                        ModelState.AddModelError("", "Invalid username or password.");
-                    }
-        
-
+                        ModelState.AddModelError("", "Confirm Email Address.");
+                    }*/
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Invalid username or password.");
+                }
             }
+
+            //-------------------------------------
+
 
             // If we got this far, something failed, redisplay form
             return View(model);
@@ -79,6 +91,7 @@ namespace OnlineVoting.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        //public async Task<ActionResult> Register(AccountRegisterUserView userView)
         public async Task<ActionResult> Register(AccountRegisterUserView userView)
         {
             if (ModelState.IsValid)
@@ -116,20 +129,59 @@ namespace OnlineVoting.Controllers
                 };
 
 
-                _userRepository.Add(user);// läger till anändar i DB
-
                 // try catch for validation of error    
+
                 try
                 {
 
-                    _userRepository.Save();
-
                     var userASP = _accountRepository.CreatesUserInASPdb(userView);// skpar användar i Asp.net DB
+
+                    _userRepository.Add(user); // läger till anändar i DB
+
+                    _userRepository.Save();// sparar till DB
+
+                    //--------------Eamil test
+
+                    /*if (userASP != null)
+                    {
+
+                        string TextMessage = string.Format("Dear {0}<BR/>Thank you for your registration, please click on the below link to comlete your registration: <a href=\"{1}\" title=\"User Email Confirm\">{1}</a>", user.UserName, Url.Action("ConfirmEmail", "Account", new { Token = userASP.Id, Email = userASP.Email }, Request.Url.Scheme));
+                        string Email = userASP.Email;
+                        string EmailSubject = "Email confirmation";
+
+                        try
+                        {
+                            SendEmail(Email, EmailSubject, TextMessage);
+                        }
+                        catch (Exception ex)// fixar bug med att användar skapades fast email misslyckats att skickas 
+                        {
+
+                            User userDB = _userRepository.GetUserByUserEmail(userASP.Email);
+
+                            User userDelit = _userRepository.GetUserByUserId(userDB.UserId);
+
+                            _userRepository.Delete(userDelit);// tar bort den skapade användaren 
+
+                            _userRepository.Save();//sparat att man tagit bort användaren 
+
+                            ModelState.AddModelError(string.Empty, ex.Message);
+
+                            return View(userView);
+                        }
+
+                    }
+                    else
+                    {
+                        ModelState.AddModelError(string.Empty, "finns ingen användare att skicka mail till");
+                    }
+                    */
+                    //--------------------
 
 
                     // auto login   -   isPersistent=remember in the sesion
                     await SignInAsync(userASP, isPersistent: false);
                     return RedirectToAction("Index", "Home");
+                    //return RedirectToAction("Confirm", "Account", new { Email = userASP.Email });
 
                 }
                 catch (Exception ex)
@@ -154,6 +206,170 @@ namespace OnlineVoting.Controllers
             return View(userView);
         }
 
+
+        //--------Email test-----------------
+
+        [AllowAnonymous]
+        public void SendEmail(string Email, string EmailSubject, string TextMessage)// funktion som skickar mail
+        {
+            MailMessage mailMessage = new MailMessage(
+    new MailAddress("Marco.villegas@live.se", "Web Registration"),
+    new MailAddress(Email));
+            mailMessage.Subject = EmailSubject;
+            mailMessage.Body = TextMessage;
+            mailMessage.IsBodyHtml = true;
+
+            SmtpClient smtp = new SmtpClient("smtp.live.com", 587); // 587 är för lokal bruk men 25 på don webb server
+            smtp.Credentials = new NetworkCredential("Marco.villegas@live.se", "darkrign3030");
+            smtp.EnableSsl =  true;
+            smtp.Send(mailMessage);
+        }
+
+
+        [AllowAnonymous]
+        public ActionResult Confirm(string Email)// visar confirm view
+        {
+            ViewBag.Email = Email;
+            return View();
+        }
+
+        // GET: /Account/ConfirmEmail 
+        [AllowAnonymous]
+        public async Task<ActionResult> ConfirmEmail(string Token, string Email)// används för att bekräfta användare genom email 
+        {
+            ApplicationUser user = _accountRepository.GetUserByIdInASPdb(Token);
+            //ApplicationUser user = this.UserManager.FindById(Token);
+            if (user != null)
+            {
+                if (user.Email == Email)
+                {
+                    user.EmailConfirmed = true;
+
+                    bool updated = await _accountRepository.Update(user);
+
+                    if (updated == true)
+                    {
+                        _accountRepository.Save();
+                    }
+                    //await UserManager.UpdateAsync(user);
+                    await SignInAsync(user, isPersistent: false);
+
+                    return RedirectToAction("Index", "Home", new { ConfirmedEmail = user.Email });
+                }
+                else
+                {
+                    return RedirectToAction("Confirm", "Account", new { Email = user.Email });
+                }
+            }
+            else
+            {
+                return RedirectToAction("Confirm", "Account", new { Email = "" });
+            }
+
+        }
+
+        //------------------------------
+
+        //------Lost password------------------------
+
+        [AllowAnonymous]
+        public ActionResult RecoverPassword()// visar confirm view
+        {
+            if (TempData["Message"] != null)
+            {
+                ViewBag.Message = TempData["Message"].ToString();// visar medelande som tagit med fron Edit view
+            }
+
+            return View();
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public ActionResult RecoverPassword(User user)// visar confirm view
+        {
+            ApplicationUser userASP = _userRepository.GetUserByUserEmailFromASPdb(user.UserName);
+            //ApplicationUser user = this.UserManager.FindById(Token);
+            if (userASP != null)
+            {
+                if (userASP.Email == user.UserName)
+                {
+
+                    string TextMessage = string.Format("{0}, you are trying to reset your password if it is not you then just ignore this email, to reset your password klick on this linke: <BR/> <a href=\"{1}\" title=\"User Email Reset\">{1}</a>", userASP.UserName, Url.Action("SetNewPassword", "Account", new { Token = userASP.Id, Email = userASP.Email }, Request.Url.Scheme));
+                    string Email = userASP.Email;
+                    string EmailSubject = "Password Recovery";
+                    //jätte bra, det kan bli något av detta
+                    SendEmail(Email, EmailSubject, TextMessage);
+
+                    TempData["Message"] = "A email that will help you recover you password has been sent to you!";
+                    return RedirectToAction("Index", "Home");
+                }
+                else
+                {
+                    TempData["Message"] = "The user exist but the recovery email does not match users, could be errors in the DB!";
+                    return RedirectToAction("RecoverPassword", "Account");
+                }
+            }
+            else
+            {
+                TempData["Message"] = "The email does not exist!";
+                return RedirectToAction("RecoverPassword", "Account");
+            }
+        }
+
+        [AllowAnonymous]
+        public async Task<ActionResult> SetNewPassword(string Token, string Email)// används för att bekräfta användare genom email 
+        {
+            ApplicationUser user = _accountRepository.GetUserByIdInASPdb(Token);
+            //ApplicationUser user = this.UserManager.FindById(Token);
+            if (user != null)
+            {
+                if (user.Email == Email)
+                {
+                    //await UserManager.UpdateAsync(user);
+                    await SignInAsync(user, isPersistent: false);
+
+                    return RedirectToAction("Manage", "Account", routeValues: null);// not fel här tita och fixa
+                }
+                else
+                {
+                    TempData["Message"] = "The user exist but the recovery link email does not match users, could be errors in the DB!";
+                    return RedirectToAction("Index", "Home");
+                }
+            }
+            else
+            {
+                TempData["Message"] = "The email does not exist!";
+                return RedirectToAction("Index", "Home");
+            }
+
+        }
+
+        //-------------------------------
+
+
+        [AllowAnonymous]
+        [ChildActionOnly]
+        public ActionResult _LoginPartial()// används i partail view för att visa namn på dem som är inlogad 
+        {
+            // ASP.NET Identity
+            if (User.Identity.GetUserId() != null)// kontroller om man är inlogad 
+            {
+                var ASPuser = _accountRepository.GetUserByIdInASPdb(User.Identity.GetUserId());
+                var user = _userRepository.GetUserByUserEmail(ASPuser.Email);
+                // Membership
+                // var user = db.UserProfiles.SingleOrDefault(m => m.UserName == User.Identity.Name);
+
+                return PartialView("_LoginPartial", user);
+            }
+            else
+            {
+                var user = new UserSettingsView();
+
+                return PartialView("_LoginPartial", user);
+            }
+
+        }
 
 
         //

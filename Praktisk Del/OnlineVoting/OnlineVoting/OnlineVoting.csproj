@@ -197,6 +197,7 @@
     <Compile Include="App_Start\Startup.Auth.cs" />
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\HtmlHelpers.cs" />
     <Compile Include="Controllers\StatesController.cs" />
     <Compile Include="Controllers\UsersController.cs" />
     <Compile Include="Controllers\ElectionsController.cs" />
@@ -347,6 +348,10 @@
     <Content Include="Views\Elections\_UserResultsInfo.cshtml" />
     <Content Include="Views\Elections\_EditElectionInfo.cshtml" />
     <Content Include="Views\Elections\_ElectionAfterEdit.cshtml" />
+    <Content Include="Views\Account\Confirm.cshtml" />
+    <Content Include="Views\Account\RecoverPassword.cshtml" />
+    <Content Include="Views\Elections\_DetailsInLine.cshtml" />
+    <Content Include="Views\Elections\_DetailsLessInLine.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

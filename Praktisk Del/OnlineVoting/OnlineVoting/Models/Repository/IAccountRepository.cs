@@ -30,6 +30,8 @@ namespace OnlineVoting.Models.Repository
         ApplicationUser GetUserByIdInASPdb(String UserId);
         Task<bool> ControlIfUserIsLockedOutFromASPdb(string UserID);
 
+        Task<bool> Update(ApplicationUser user);
+
         void Save();
 
 

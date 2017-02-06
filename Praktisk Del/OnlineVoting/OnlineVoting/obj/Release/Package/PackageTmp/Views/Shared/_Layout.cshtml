@@ -45,31 +45,32 @@
                         <li>@Html.ActionLink("Results", "Results", "Elections")</li>
                     }
                 </ul>
-                @Html.Partial("_LoginPartial")
+                @*@Html.Partial("_LoginPartial")*@
+                @Html.Action("_LoginPartial", "Account")
+                </div>
             </div>
         </div>
-    </div>
-    <div class="container body-content">
+        <div class="container body-content">
 
-        @RenderBody()
-        <hr />
-        <footer>
-            <p>&copy; @DateTime.Now.Year - OlineVoting</p>
-        </footer>
+            @RenderBody()
+            <hr />
+            <footer>
+                <p>&copy; @DateTime.Now.Year - OlineVoting</p>
+            </footer>
 
-    </div>
-    @Scripts.Render("~/bundles/jquery")
-    @Scripts.Render("~/bundles/bootstrap")
-    @Scripts.Render("~/Scripts/jquery.unobtrusive-ajax.min.js")
-    @Scripts.Render("~/Scripts/jquery.validate.min.js")
-    @Scripts.Render("~/Scripts/jquery.timepicker.min.js") <!--script som har Timepicker jquery funktionen som gör att man kan välja tid i en lista -->
-    @Scripts.Render("~/Scripts/jquery-ui.min.js")<!--script som har Datepicker jquery funktionen som gör att man kan välja datum ur en kalender-->
+        </div>
+        @Scripts.Render("~/bundles/jquery")
+        @Scripts.Render("~/bundles/bootstrap")
+        @Scripts.Render("~/Scripts/jquery.unobtrusive-ajax.min.js")
+        @Scripts.Render("~/Scripts/jquery.validate.min.js")
+        @Scripts.Render("~/Scripts/jquery.timepicker.min.js") <!--script som har Timepicker jquery funktionen som gör att man kan välja tid i en lista -->
+        @Scripts.Render("~/Scripts/jquery-ui.min.js")<!--script som har Datepicker jquery funktionen som gör att man kan välja datum ur en kalender-->
 
-    @Scripts.Render("~/Scripts/Focus,TimeAndDate.js")<!--Egen liten script som aktiverar (Date,Tame) jquery funktionerna som finns i dem andra filerna och har också en focus funktion som fokuserar på en specifik textruta -->
+        @Scripts.Render("~/Scripts/Focus,TimeAndDate.js")<!--Egen liten script som aktiverar (Date,Tame) jquery funktionerna som finns i dem andra filerna och har också en focus funktion som fokuserar på en specifik textruta -->
 
-    <link href="~/Content/jquery.timepicker.css" rel="stylesheet" /><!--CSS till TimePicker-->
-    <link href="~/Content/jquery-ui.min.css" rel="stylesheet" /><!--CSS till DatePicker-->
+        <link href="~/Content/jquery.timepicker.css" rel="stylesheet" /><!--CSS till TimePicker-->
+        <link href="~/Content/jquery-ui.min.css" rel="stylesheet" /><!--CSS till DatePicker-->
 
-    @RenderSection("scripts", required: false)
-</body>
-</html>
+        @RenderSection("scripts", required: false)
+    </body>
+    </html>

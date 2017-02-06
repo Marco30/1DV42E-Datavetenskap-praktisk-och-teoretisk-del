@@ -117,6 +117,21 @@ namespace OnlineVoting.Models.Repository
             return user;
         }
 
+        //-----Updat använda för Email verifiering
+        public async Task<bool> Update(ApplicationUser user)//Regdigerar kontakt i ASP.net DB
+        {
+            try
+            {
+                await userManager.UpdateAsync(user);
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public void Dispose(bool disposing)
         {
             if (!_disposed)// kontrolerare om Dispos redan körts 
